@@ -2,7 +2,9 @@ package com.example.PixelMageEcomerceProject.service.impl;
 
 import com.example.PixelMageEcomerceProject.dto.request.PurchaseOrderRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.PurchaseOrder;
+import com.example.PixelMageEcomerceProject.entity.PurchaseOrderLine;
 import com.example.PixelMageEcomerceProject.entity.Supplier;
+import com.example.PixelMageEcomerceProject.repository.PurchaseOrderLineRepository;
 import com.example.PixelMageEcomerceProject.repository.PurchaseOrderRepository;
 import com.example.PixelMageEcomerceProject.repository.SupplierRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.PurchaseOrderService;
@@ -19,6 +21,22 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final SupplierRepository supplierRepository;
+    private final PurchaseOrderLineRepository purchaseOrderLineRepository;
+
+
+    @Override
+    public PurchaseOrder receivedPurchaseOrder(Integer purchaseOrderId ,String poId) {
+        PurchaseOrderLine findPoId = purchaseOrderLineRepository.findByPoId(poId);
+        PurchaseOrder findPurchaseOrderId = purchaseOrderRepository.findById(purchaseOrderId).orElse(null);
+        if (findPoId != null && findPurchaseOrderId != null) {
+            if(findPoId.getQuantityOrdered() == findPoId.getQuantityReceived()){
+                findPurchaseOrderId.setStatus("RECEIVED");
+                return purchaseOrderRepository.save(findPurchaseOrderId);
+            }
+        }
+        return null;
+    }
+
 
     @Override
     @Transactional

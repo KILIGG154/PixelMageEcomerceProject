@@ -1,8 +1,10 @@
 package com.example.PixelMageEcomerceProject.controller;
 
+import com.example.PixelMageEcomerceProject.dto.request.PurchaseOrderLineRequest;
 import com.example.PixelMageEcomerceProject.dto.request.PurchaseOrderRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.PurchaseOrder;
+import com.example.PixelMageEcomerceProject.service.interfaces.PurchaseOrderLineService;
 import com.example.PixelMageEcomerceProject.service.interfaces.PurchaseOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +29,8 @@ import java.util.List;
 public class PurchaseOrderController {
 
     private final PurchaseOrderService purchaseOrderService;
+
+    private final PurchaseOrderLineService purchaseOrderLineService;
 
     @PostMapping
     @Operation(summary = "Create a new purchase order", description = "Create a new purchase order with warehouse, supplier, PO number, status, order date and expected delivery")
@@ -255,6 +259,64 @@ public class PurchaseOrderController {
                 exists
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{poId}/lines")
+    @Operation(summary = "Add purchase order line to a purchase order", description = "Add a new purchase order line to an existing purchase order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Purchase order line added successfully",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+            @ApiResponse(responseCode = "400", description = "Bad request - Invalid data",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+            @ApiResponse(responseCode = "404", description = "Purchase order not found",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+    })
+    public ResponseEntity<ResponseBase> addPurchaseOrderLine(@PathVariable int poId, @RequestBody PurchaseOrderLineRequest request){
+        try {
+            var line = purchaseOrderLineService.createPurchaseOrderLine(request,poId);
+            ResponseBase response = new ResponseBase(
+                    HttpStatus.CREATED.value(),
+                    "Purchase order line added successfully",
+                    line
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            ResponseBase response = new ResponseBase(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Failed to add purchase order line: " + e.getMessage(),
+                    null
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    @PutMapping("/{poId}/lines/{lineId}")
+    @Operation(summary = "Update purchase order line", description = "Update an existing purchase order line")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Purchase order line updated successfully",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+            @ApiResponse(responseCode = "400", description = "Bad request - Invalid data",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+            @ApiResponse(responseCode = "404", description = "Purchase order or line not found",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+    })
+    public ResponseEntity<ResponseBase> updatePurchaseOrderLine( @PathVariable int poId,@PathVariable String lineId){
+        try {
+            PurchaseOrder updateStatusPo = purchaseOrderService.receivedPurchaseOrder(poId,lineId);
+            ResponseBase response = new ResponseBase(
+                    HttpStatus.OK.value(),
+                    "Received full product successfully",
+                    updateStatusPo
+            );
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e){
+            ResponseBase response = new ResponseBase(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Received not enough product: " + e.getMessage(),
+                    null
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
 }
 

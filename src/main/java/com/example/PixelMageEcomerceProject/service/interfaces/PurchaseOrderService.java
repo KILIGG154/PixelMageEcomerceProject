@@ -52,5 +52,7 @@ public interface PurchaseOrderService {
      * Check if PO number exists
      */
     boolean existsByPoNumber(String poNumber);
+
+    PurchaseOrder receivedPurchaseOrder(Integer purchaseOrderId,String poId);
 }
 

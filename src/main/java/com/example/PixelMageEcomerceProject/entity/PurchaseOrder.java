@@ -28,7 +28,7 @@ public class PurchaseOrder {
     private Integer warehouseId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "supplier_id", nullable = false)
+    @JoinColumn(name = "Supplier_id", nullable = false, referencedColumnName = "Supplier_id")
     @JsonBackReference
     private Supplier supplier;
 
@@ -40,7 +40,7 @@ public class PurchaseOrder {
     private String poNumber;
 
     @Column(name = "status", length = 20)
-    private String status; // DRAFT, SUBMITTED, APPROVED, CANCELED, ORDERED
+    private String status; // DRAFT, SUBMITTED, APPROVED ,CANCELED, RECEIVED, CLOSED
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;
