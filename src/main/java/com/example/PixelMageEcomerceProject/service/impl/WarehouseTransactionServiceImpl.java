@@ -113,7 +113,7 @@ public class WarehouseTransactionServiceImpl implements WarehouseTransactionServ
                     .orElseThrow(() -> new RuntimeException("Warehouse not found"));
             inventory = new Inventory();
             inventory.setWarehouse(warehouse);
-            inventory.setProductId(transactionRequestDTO.getProductId());
+//            inventory.setProduct(transactionRequestDTO.getProductId());
             inventory.setQuantity(0);
         }
 

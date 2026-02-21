@@ -1,5 +1,6 @@
 package com.example.PixelMageEcomerceProject.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "Accounts")
@@ -49,6 +51,11 @@ public class Account implements UserDetails {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "Role_id", nullable = false)
     private Role role;
+
+    // Relationship: Account 1-N Order
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("account-orders")
+    private List<Order> orders;
 
     // UserDetails implementation
     @Override

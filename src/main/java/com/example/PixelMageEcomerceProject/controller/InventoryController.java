@@ -28,7 +28,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @PostMapping
+    @PostMapping("/{productId}")
     @Operation(summary = "Create inventory record", description = "Create a new inventory record")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Inventory created successfully",
@@ -42,9 +42,9 @@ public class InventoryController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = InventoryRequestDTO.class))
             )
-            @RequestBody InventoryRequestDTO inventoryRequestDTO) {
+            @RequestBody InventoryRequestDTO inventoryRequestDTO, @PathVariable Integer productId) {
         try {
-            Inventory createdInventory = inventoryService.createInventory(inventoryRequestDTO);
+            Inventory createdInventory = inventoryService.createInventory(inventoryRequestDTO, productId);
             ResponseBase response = new ResponseBase(
                     HttpStatus.CREATED.value(),
                     "Inventory created successfully",

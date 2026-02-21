@@ -8,35 +8,42 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "INVENTORY")
+@Table(name = "ORDER_ITEMS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inventory {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "inventory_id")
-    private Integer id;
+    @Column(name = "order_item_id")
+    private Integer orderItemId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "product_id", nullable = false, referencedColumnName = "product_id")
-    @JsonBackReference("product-inventories")
-    private Product product;
+    @JoinColumn(name = "order_id", nullable = false, referencedColumnName = "order_id")
+    @JsonBackReference("order-orderItems")
+    private Order order;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "warehouse_id", nullable = false, referencedColumnName = "warehouse_id")
-    @JsonBackReference("warehouse-inventories")
-    private Warehouse warehouse;
+    @JoinColumn(name = "card_id", nullable = false, referencedColumnName = "card_id")
+    @JsonBackReference("card-orderItems")
+    private Card card;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "last_checked")
-    private LocalDateTime lastChecked;
+    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "custom_text", columnDefinition = "TEXT")
+    private String customText;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,4 +53,3 @@ public class Inventory {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
-

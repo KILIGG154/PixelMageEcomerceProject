@@ -24,7 +24,7 @@ public class WarehouseTransaction {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "warehouse_id", nullable = false, referencedColumnName = "warehouse_id")
-    @JsonBackReference
+    @JsonBackReference("warehouse-transactions")
     private Warehouse warehouse;
 
     @Column(name = "product_id", nullable = false)

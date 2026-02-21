@@ -23,8 +23,13 @@ public class PurchaseOrderLine {
 
     @ManyToOne
     @JoinColumn(name = "purchase_order_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference("purchaseOrder-purchaseOrderLines")
     private PurchaseOrder purchaseOrder;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id", nullable = false, referencedColumnName = "product_id")
+    @JsonBackReference("product-purchaseOrderLines")
+    private Product product;
 
     @Column(name = "Quantity_Ordered", nullable = false)
     private int quantityOrdered;

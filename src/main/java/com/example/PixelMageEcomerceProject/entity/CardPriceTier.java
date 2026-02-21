@@ -8,35 +8,34 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "INVENTORY")
+@Table(name = "CARD_PRICE_TIER")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inventory {
+public class CardPriceTier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "inventory_id")
-    private Integer id;
+    @Column(name = "tier_id")
+    private Integer tierId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "product_id", nullable = false, referencedColumnName = "product_id")
-    @JsonBackReference("product-inventories")
-    private Product product;
+    @JoinColumn(name = "card_id", nullable = false, referencedColumnName = "card_template_id")
+    @JsonBackReference("cardTemplate-cardPriceTiers")
+    private CardTemplate cardTemplate;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "warehouse_id", nullable = false, referencedColumnName = "warehouse_id")
-    @JsonBackReference("warehouse-inventories")
-    private Warehouse warehouse;
+    @Column(name = "min_quantity", nullable = false)
+    private Integer minQuantity;
 
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
+    @Column(name = "max_quantity")
+    private Integer maxQuantity;
 
-    @Column(name = "last_checked")
-    private LocalDateTime lastChecked;
+    @Column(name = "price_per_unit", nullable = false, precision = 10, scale = 2)
+    private BigDecimal pricePerUnit;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -46,4 +45,3 @@ public class Inventory {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
-

@@ -29,11 +29,11 @@ public class PurchaseOrder {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "Supplier_id", nullable = false, referencedColumnName = "Supplier_id")
-    @JsonBackReference
+    @JsonBackReference("supplier-purchaseOrders")
     private Supplier supplier;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonManagedReference("purchaseOrder-purchaseOrderLines")
     private List<PurchaseOrderLine> purchaseOrderLines;
 
     @Column(name = "po_number", length = 50)

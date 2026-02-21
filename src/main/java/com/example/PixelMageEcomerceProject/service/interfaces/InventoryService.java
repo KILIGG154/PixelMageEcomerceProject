@@ -12,7 +12,7 @@ public interface InventoryService {
     /**
      * Create a new inventory record
      */
-    Inventory createInventory(InventoryRequestDTO inventoryRequestDTO);
+    Inventory createInventory(InventoryRequestDTO inventoryRequestDTO, int productId);
 
     /**
      * Update an existing inventory record

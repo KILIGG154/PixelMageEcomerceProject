@@ -45,5 +45,15 @@ public class Warehouse {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Relationship: Warehouse 1-N Inventory
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("warehouse-inventories")
+    private List<Inventory> inventories;
+
+    // Relationship: Warehouse 1-N WarehouseTransaction
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("warehouse-transactions")
+    private List<WarehouseTransaction> warehouseTransactions;
 }
 

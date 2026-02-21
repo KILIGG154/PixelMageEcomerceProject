@@ -1,6 +1,5 @@
 package com.example.PixelMageEcomerceProject.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,35 +12,25 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "SUPPLIERS")
+@Table(name = "CARD_TEMPLATES")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Supplier {
+public class CardTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Supplier_id")
-    private Integer id;
+    @Column(name = "card_template_id")
+    private Integer cardTemplateId;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "contact_person", nullable = false, length = 100)
-    private String contactPerson;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "email", nullable = false, length = 100)
-    private String email;
-
-    @Column(name = "phone", length = 20)
-    private String phone;
-
-    @Column(name = "address", length = 255)
-    private String address;
-
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL)
-    @JsonManagedReference("supplier-purchaseOrders")
-    private List<PurchaseOrder> purchaseOrder;
+    @Column(name = "design_path", length = 255)
+    private String designPath;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -50,5 +39,14 @@ public class Supplier {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-}
 
+    // Relationship: CardTemplate 1-N Card
+    @OneToMany(mappedBy = "cardTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("cardTemplate-cards")
+    private List<Card> cards;
+
+    // Relationship: CardTemplate 1-N CardPriceTier
+    @OneToMany(mappedBy = "cardTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("cardTemplate-cardPriceTiers")
+    private List<CardPriceTier> cardPriceTiers;
+}
