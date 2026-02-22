@@ -4,7 +4,9 @@ import com.example.PixelMageEcomerceProject.dto.request.AccountRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.Account;
+import com.example.PixelMageEcomerceProject.entity.AuthProvider;
 import com.example.PixelMageEcomerceProject.service.interfaces.AccountService;
+import com.example.PixelMageEcomerceProject.security.service.AuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,6 +32,7 @@ import java.util.Map;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AuthenticationService authenticationService;
 
     /**
      * Create a new account
@@ -287,6 +290,132 @@ public class AccountController {
             );
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
+    }
+
+    // === OAuth2 Authentication Endpoints ===
+
+    /**
+     * Initiate Google OAuth2 authentication
+     */
+    @GetMapping("/auth/google")
+    @Operation(
+            summary = "Initiate Google OAuth2 authentication",
+            description = "Redirects user to Google OAuth2 authorization page for social login"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Redirect to Google OAuth2 authorization"),
+            @ApiResponse(responseCode = "500", description = "OAuth2 initialization failed")
+    })
+    public ResponseEntity<Object> initiateGoogleLogin() {
+        // This endpoint will trigger Spring Security's OAuth2 flow automatically
+        // Redirect to Google OAuth2 authorization endpoint
+        String googleAuthUrl = "/oauth2/authorization/google";
+        
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header("Location", googleAuthUrl)
+                .build();
+    }
+
+    /**
+     * Check OAuth2 account linking capability
+     */
+    @GetMapping("/auth/can-link")
+    @Operation(
+            summary = "Check if OAuth2 account can be linked",
+            description = "Verify if an email can be used for OAuth2 account creation or linking"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Link capability check completed",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+    })
+    public ResponseEntity<ResponseBase> canLinkOAuth2Account(
+            @Parameter(description = "Email address to check", required = true)
+            @RequestParam String email) {
+        
+        boolean canCreate = authenticationService.canCreateOAuth2Account(email);
+        String message = canCreate 
+            ? "Email can be used for OAuth2 authentication" 
+            : "Email already linked to another OAuth2 provider";
+        
+        ResponseBase response = new ResponseBase(
+            HttpStatus.OK.value(),
+            message,
+            Map.of(
+                "email", email,
+                "canLink", canCreate
+            )
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get account authentication provider information
+     */
+    @GetMapping("/auth/provider/{email}")
+    @Operation(
+            summary = "Get account authentication provider",
+            description = "Retrieve authentication provider information for an account"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Provider information retrieved",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+            @ApiResponse(responseCode = "404", description = "Account not found",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+    })
+    public ResponseEntity<ResponseBase> getAccountProvider(
+            @Parameter(description = "Email address", required = true)
+            @PathVariable String email) {
+        
+        return accountService.getAccountByEmail(email)
+                .map(account -> {
+                    Map<String, Object> providerInfo = Map.of(
+                        "email", account.getEmail(),
+                        "authProvider", account.getAuthProvider(),
+                        "hasLocalPassword", account.getPassword() != null,
+                        "isOAuth2Account", account.getAuthProvider() != AuthProvider.LOCAL
+                    );
+                    
+                    ResponseBase response = new ResponseBase(
+                        HttpStatus.OK.value(),
+                        "Provider information retrieved",
+                        providerInfo
+                    );
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(() -> {
+                    ResponseBase response = new ResponseBase(
+                        HttpStatus.NOT_FOUND.value(),
+                        "Account not found with email: " + email,
+                        null
+                    );
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                });
+    }
+
+    /**
+     * OAuth2 logout endpoint
+     */
+    @PostMapping("/auth/logout")
+    @Operation(
+            summary = "OAuth2 logout",
+            description = "Logout user from OAuth2 session (local JWT invalidation)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful",
+                    content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+    })
+    public ResponseEntity<ResponseBase> oAuth2Logout() {
+        // For JWT-based authentication, logout is typically handled on the client side
+        // by removing the token. This endpoint confirms successful logout.
+        ResponseBase response = new ResponseBase(
+            HttpStatus.OK.value(),
+            "Logout successful. Please remove JWT token from client storage.",
+            Map.of(
+                "action", "remove_jwt_token",
+                "timestamp", System.currentTimeMillis()
+            )
+        );
+        return ResponseEntity.ok(response);
     }
 }
 

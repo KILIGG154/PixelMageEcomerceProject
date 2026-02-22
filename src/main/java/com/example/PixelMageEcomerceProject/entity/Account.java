@@ -31,7 +31,7 @@ public class Account implements UserDetails {
     @Column(name = "email", nullable = false, length = 100)
     private String email;
 
-    @Column(name = "password", nullable = false, length = 100)
+    @Column(name = "password", length = 100)  // Made nullable for OAuth2 accounts
     private String password;
 
     @Column(name = "name", nullable = false, length = 100)
@@ -39,6 +39,13 @@ public class Account implements UserDetails {
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_id", length = 100)
+    private String providerId;  // Google user ID for OAuth2 accounts
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -56,6 +63,11 @@ public class Account implements UserDetails {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("account-orders")
     private List<Order> orders;
+
+    // Relationship: Account 1-N CardCollection
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("account-collections")
+    private List<CardCollection> collections;
 
     // UserDetails implementation
     @Override

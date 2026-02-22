@@ -3,6 +3,8 @@ package com.example.PixelMageEcomerceProject.security.config;
 
 import com.example.PixelMageEcomerceProject.security.jwt.JwtAuthenticationFilter;
 import com.example.PixelMageEcomerceProject.security.service.CustomUserDetailsService;
+import com.example.PixelMageEcomerceProject.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import com.example.PixelMageEcomerceProject.security.oauth2.OAuth2AuthenticationFailureHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +39,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomUserDetailsService customUserDetailsService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final PasswordEncoder passwordEncoder;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -44,32 +49,45 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints - no authentication required
                         .requestMatchers(
-                                "/api/auth/**",
-                                "/api/accounts/**",
-                                "/api/roles/**",
-                                "/api/suppliers/**",
-                                "/api/purchase-orders/**",
-                                "/api/warehouses/**",
-                                "/api/inventory/**",
-                                "/api/orders/**",
-                                "/api/products/**",
-                                "/api/order-items/**",
-                                "/api/cards/**",
-                                "/api/card-price-tiers/**",
-                                "/api/card-templates/**",
-                                "/api/card-contents/**",
-                                "/api/warehouse-transactions/**",
-                                "/api/v1/teachers/**",
-                                "/api/v1/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
+                                "/api/auth/**",      // Authentication endpoints
+                                "/api/accounts/login",       // Login endpoint
+                                "/api/accounts/registration", // Registration endpoint
+                                "/oauth2/**",        // OAuth2 endpoints
+                                "/login/oauth2/**",  // OAuth2 login callbacks
+                                "/v3/api-docs/**",   // OpenAPI documentation
+                                "/swagger-ui/**",    // Swagger UI
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 "/api-docs/**"
                         ).permitAll()
-                        .anyRequest().authenticated()
+                        // Protected endpoints - JWT authentication required
+                        .requestMatchers(
+                                "/api/payments/**",             // Payment endpoints (high security)
+                                "/api/accounts/**",             // Account management
+                                "/api/orders/**",               // Order management
+                                "/api/roles/**",                // Role management
+                                "/api/suppliers/**",            // Supplier management
+                                "/api/purchase-orders/**",     // Purchase order management
+                                "/api/warehouses/**",           // Warehouse management
+                                "/api/inventory/**",            // Inventory management
+                                "/api/products/**",             // Product management
+                                "/api/order-items/**",          // Order item management
+                                "/api/cards/**",                // Card management
+                                "/api/card-price-tiers/**",     // Card price tier management
+                                "/api/card-templates/**",       // Card template management
+                                "/api/card-contents/**",        // Card content management
+                                "/api/collections/**",          // Collection management
+                                "/api/warehouse-transactions/**", // Warehouse transaction management
+                                "/api/v1/**"                    // All v1 API endpoints
+                        ).authenticated()
+                        .anyRequest().authenticated() // All other requests require authentication
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -98,18 +116,13 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(customUserDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);  // Use injected passwordEncoder
         return authProvider;
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }
 

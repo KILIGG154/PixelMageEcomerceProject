@@ -89,6 +89,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- OAuth2 Dependencies for Google Social Login -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
 		<!-- SpringDoc OpenAPI (Swagger) -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -100,6 +106,13 @@
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>
 			<version>3.0.0</version>
+		</dependency>
+		
+		<!-- Stripe Java SDK -->
+		<dependency>
+			<groupId>com.stripe</groupId>
+			<artifactId>stripe-java</artifactId>
+			<version>24.16.0</version>
 		</dependency>
 	</dependencies>
 

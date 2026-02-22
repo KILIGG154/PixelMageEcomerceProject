@@ -6,11 +6,15 @@ import com.example.PixelMageEcomerceProject.entity.Order;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.OrderRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.OrderService;
+import com.example.PixelMageEcomerceProject.service.interfaces.PaymentService;
+import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -20,6 +24,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final AccountRepository accountRepository;
+    private final PaymentService paymentService;
 
     @Override
     public Order createOrder(OrderRequestDTO orderRequestDTO) {
@@ -37,6 +42,30 @@ public class OrderServiceImpl implements OrderService {
         order.setNotes(orderRequestDTO.getNotes());
 
         return orderRepository.save(order);
+    }
+
+    @Override
+    public Map<String, Object> createOrderWithPayment(OrderRequestDTO orderRequestDTO, String currency) {
+        // First create the order
+        Order createdOrder = createOrder(orderRequestDTO);
+        
+        // Then create payment intent for the order
+        PaymentIntent paymentIntent = paymentService.createPaymentIntent(
+                createdOrder.getOrderId(),
+                createdOrder.getTotalAmount(),
+                currency != null ? currency : "usd"
+        );
+        
+        // Return combined response
+        Map<String, Object> response = new HashMap<>();
+        response.put("order", createdOrder);
+        response.put("paymentIntent", Map.of(
+                "id", paymentIntent.getId(),
+                "clientSecret", paymentIntent.getClientSecret(),
+                "status", paymentIntent.getStatus()
+        ));
+        
+        return response;
     }
 
     @Override
