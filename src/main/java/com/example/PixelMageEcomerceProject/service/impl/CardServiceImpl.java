@@ -1,5 +1,11 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.PixelMageEcomerceProject.dto.request.CardRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Card;
 import com.example.PixelMageEcomerceProject.entity.CardTemplate;
@@ -8,12 +14,8 @@ import com.example.PixelMageEcomerceProject.repository.CardRepository;
 import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.repository.ProductRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.CardService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +29,8 @@ public class CardServiceImpl implements CardService {
     @Override
     public Card createCard(CardRequestDTO cardRequestDTO) {
         CardTemplate cardTemplate = cardTemplateRepository.findById(cardRequestDTO.getCardTemplateId())
-                .orElseThrow(() -> new RuntimeException("CardTemplate not found with id: " + cardRequestDTO.getCardTemplateId()));
+                .orElseThrow(() -> new RuntimeException(
+                        "CardTemplate not found with id: " + cardRequestDTO.getCardTemplateId()));
 
         Product product = productRepository.findById(cardRequestDTO.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + cardRequestDTO.getProductId()));
@@ -50,13 +53,15 @@ public class CardServiceImpl implements CardService {
 
             if (cardRequestDTO.getCardTemplateId() != null) {
                 CardTemplate cardTemplate = cardTemplateRepository.findById(cardRequestDTO.getCardTemplateId())
-                        .orElseThrow(() -> new RuntimeException("CardTemplate not found with id: " + cardRequestDTO.getCardTemplateId()));
+                        .orElseThrow(() -> new RuntimeException(
+                                "CardTemplate not found with id: " + cardRequestDTO.getCardTemplateId()));
                 updatedCard.setCardTemplate(cardTemplate);
             }
 
             if (cardRequestDTO.getProductId() != null) {
                 Product product = productRepository.findById(cardRequestDTO.getProductId())
-                        .orElseThrow(() -> new RuntimeException("Product not found with id: " + cardRequestDTO.getProductId()));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Product not found with id: " + cardRequestDTO.getProductId()));
                 updatedCard.setProduct(product);
             }
 
@@ -68,10 +73,10 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void deleteCard(Integer id) {
-        if (!cardRepository.existsById(id)) {
-            throw new RuntimeException("Card not found with id: " + id);
-        }
-        cardRepository.deleteById(id);
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Card not found with id: " + id));
+        card.setIsActive(false);
+        cardRepository.save(card);
     }
 
     @Override
