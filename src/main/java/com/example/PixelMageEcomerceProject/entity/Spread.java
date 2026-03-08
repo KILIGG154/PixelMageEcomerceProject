@@ -1,0 +1,42 @@
+package com.example.PixelMageEcomerceProject.entity;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "spreads")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Spread {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "spread_id")
+    private Integer spreadId;
+
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "description", columnDefinition = "NVARCHAR(500)")
+    private String description;
+
+    @Column(name = "position_count", nullable = false)
+    private Integer positionCount;
+
+    @Column(name = "min_cards_required")
+    @Builder.Default
+    private Integer minCardsRequired = 1;
+
+    @OneToMany(mappedBy = "spread", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("spread-readingSessions")
+    private List<ReadingSession> readingSessions;
+}
