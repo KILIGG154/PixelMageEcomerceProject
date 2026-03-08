@@ -9,5 +9,5 @@ import com.example.PixelMageEcomerceProject.entity.ReadingCard;
 
 @Repository
 public interface ReadingCardRepository extends JpaRepository<ReadingCard, Integer> {
-    List<ReadingCard> findByReadingSession_ReadingSessionId(Integer readingSessionId);
+    List<ReadingCard> findByReadingSession_SessionId(Integer readingSessionId);
 }

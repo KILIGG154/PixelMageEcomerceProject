@@ -151,7 +151,7 @@ public class TarotReadingServiceImpl implements TarotReadingService {
         ReadingSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        List<ReadingCard> drawnCards = readingCardRepository.findByReadingSession_ReadingSessionId(sessionId);
+        List<ReadingCard> drawnCards = readingCardRepository.findByReadingSession_SessionId(sessionId);
         if (drawnCards.isEmpty()) {
             throw new RuntimeException("No cards drawn for this session.");
         }

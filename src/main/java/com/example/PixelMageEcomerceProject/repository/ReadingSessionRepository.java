@@ -9,5 +9,5 @@ import com.example.PixelMageEcomerceProject.entity.ReadingSession;
 
 @Repository
 public interface ReadingSessionRepository extends JpaRepository<ReadingSession, Integer> {
-    List<ReadingSession> findByAccount_AccountId(Integer accountId);
+    List<ReadingSession> findByAccount_CustomerId(Integer customerId);
 }
