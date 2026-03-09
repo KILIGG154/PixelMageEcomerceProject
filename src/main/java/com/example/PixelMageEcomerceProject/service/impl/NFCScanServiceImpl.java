@@ -13,6 +13,7 @@ import com.example.PixelMageEcomerceProject.enums.CardProductStatus;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.NFCScanService;
+import com.example.PixelMageEcomerceProject.service.interfaces.UserInventoryService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ public class NFCScanServiceImpl implements NFCScanService {
 
     private final CardRepository cardRepository;
     private final AccountRepository accountRepository;
+    private final UserInventoryService userInventoryService;
 
     @Override
     public Map<String, Object> scanNFC(String nfcUid, Integer userId) {
@@ -74,7 +76,11 @@ public class NFCScanServiceImpl implements NFCScanService {
         card.setLinkedAt(LocalDateTime.now());
 
         cardRepository.save(card);
-        // UserInventory update will be implemented in Phase 3
+
+        // Cập nhật Inventory +1 theo template ID
+        if (card.getCardTemplate() != null) {
+            userInventoryService.upsertInventory(userId, card.getCardTemplate().getCardTemplateId(), 1);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Card linked successfully");
@@ -101,6 +107,11 @@ public class NFCScanServiceImpl implements NFCScanService {
         card.setLinkedAt(null);
 
         cardRepository.save(card);
+
+        // Cập nhật Inventory -1 theo template ID
+        if (card.getCardTemplate() != null) {
+            userInventoryService.upsertInventory(userId, card.getCardTemplate().getCardTemplateId(), -1);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Card unlinked successfully");
