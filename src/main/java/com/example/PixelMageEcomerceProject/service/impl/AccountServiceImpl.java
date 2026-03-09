@@ -1,5 +1,15 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.PixelMageEcomerceProject.dto.request.AccountRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Account;
@@ -8,16 +18,8 @@ import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.RoleRepository;
 import com.example.PixelMageEcomerceProject.security.service.AuthenticationService;
 import com.example.PixelMageEcomerceProject.service.interfaces.AccountService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +51,7 @@ public class AccountServiceImpl implements AccountService {
         Role role = roleRepository.findById(account.getRoleId())
                 .orElseThrow(() -> new RuntimeException(
                         "Role not found with id: " + account.getRoleId() +
-                        ". Please create the role first using POST /api/roles"
-                ));
+                                ". Please create the role first using POST /api/roles"));
 
         Account newAccount = new Account();
         newAccount.setEmail(account.getEmail());
@@ -70,7 +71,7 @@ public class AccountServiceImpl implements AccountService {
 
         // Check if email is being changed and if new email already exists
         if (!existingAccount.getEmail().equals(account.getEmail()) &&
-            existsByEmail(account.getEmail())) {
+                existsByEmail(account.getEmail())) {
             throw new RuntimeException("Email already exists: " + account.getEmail());
         }
 
@@ -90,10 +91,10 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public void deleteAccount(Integer customerId) {
-        if (!accountRepository.existsById(customerId)) {
-            throw new RuntimeException("Account not found with id: " + customerId);
-        }
-        accountRepository.deleteById(customerId);
+        Account account = accountRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Account not found with id: " + customerId));
+        account.setIsActive(false);
+        accountRepository.save(account);
     }
 
     @Override
@@ -124,15 +125,13 @@ public class AccountServiceImpl implements AccountService {
     public Map<String, Object> loginAccount(LoginRequestDTO loginRequestDTO) {
         Account accountOpt = accountRepository.findByEmail(loginRequestDTO.getEmail()).orElseThrow(null);
 
-        if(!passwordEncoder.matches(loginRequestDTO.getPassword(), accountOpt.getPassword())) {
+        if (!passwordEncoder.matches(loginRequestDTO.getPassword(), accountOpt.getPassword())) {
             throw new BadCredentialsException("Invalid email or password");
         }
         String token = authenticationService.generateToken(accountOpt);
 
         return Map.of(
                 "token", token,
-                "account", accountOpt
-        );
+                "account", accountOpt);
     }
 }
-

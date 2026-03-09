@@ -1,5 +1,13 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.PixelMageEcomerceProject.dto.request.OrderRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.Order;
@@ -8,14 +16,8 @@ import com.example.PixelMageEcomerceProject.repository.OrderRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.OrderService;
 import com.example.PixelMageEcomerceProject.service.interfaces.PaymentService;
 import com.stripe.model.PaymentIntent;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +31,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order createOrder(OrderRequestDTO orderRequestDTO) {
         Account account = accountRepository.findById(orderRequestDTO.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Account not found with id: " + orderRequestDTO.getCustomerId()));
+                .orElseThrow(
+                        () -> new RuntimeException("Account not found with id: " + orderRequestDTO.getCustomerId()));
 
         Order order = new Order();
         order.setAccount(account);
@@ -48,23 +51,21 @@ public class OrderServiceImpl implements OrderService {
     public Map<String, Object> createOrderWithPayment(OrderRequestDTO orderRequestDTO, String currency) {
         // First create the order
         Order createdOrder = createOrder(orderRequestDTO);
-        
+
         // Then create payment intent for the order
         PaymentIntent paymentIntent = paymentService.createPaymentIntent(
                 createdOrder.getOrderId(),
                 createdOrder.getTotalAmount(),
-                currency != null ? currency : "usd"
-        );
-        
+                currency != null ? currency : "usd");
+
         // Return combined response
         Map<String, Object> response = new HashMap<>();
         response.put("order", createdOrder);
         response.put("paymentIntent", Map.of(
                 "id", paymentIntent.getId(),
                 "clientSecret", paymentIntent.getClientSecret(),
-                "status", paymentIntent.getStatus()
-        ));
-        
+                "status", paymentIntent.getStatus()));
+
         return response;
     }
 
@@ -76,7 +77,8 @@ public class OrderServiceImpl implements OrderService {
 
             if (orderRequestDTO.getCustomerId() != null) {
                 Account account = accountRepository.findById(orderRequestDTO.getCustomerId())
-                        .orElseThrow(() -> new RuntimeException("Account not found with id: " + orderRequestDTO.getCustomerId()));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Account not found with id: " + orderRequestDTO.getCustomerId()));
                 updatedOrder.setAccount(account);
             }
 
@@ -94,10 +96,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void deleteOrder(Integer id) {
-        if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("Order not found with id: " + id);
-        }
-        orderRepository.deleteById(id);
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+        order.setIsActive(false);
+        orderRepository.save(order);
     }
 
     @Override

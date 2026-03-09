@@ -1,15 +1,17 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.PixelMageEcomerceProject.dto.request.CardTemplateRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.CardTemplate;
 import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.CardTemplateService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -42,10 +44,10 @@ public class CardTemplateServiceImpl implements CardTemplateService {
 
     @Override
     public void deleteCardTemplate(Integer id) {
-        if (!cardTemplateRepository.existsById(id)) {
-            throw new RuntimeException("CardTemplate not found with id: " + id);
-        }
-        cardTemplateRepository.deleteById(id);
+        CardTemplate template = cardTemplateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("CardTemplate not found with id: " + id));
+        template.setActive(false);
+        cardTemplateRepository.save(template);
     }
 
     @Override

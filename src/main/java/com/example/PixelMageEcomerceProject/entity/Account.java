@@ -1,23 +1,39 @@
 package com.example.PixelMageEcomerceProject.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Entity
 @Table(name = "Accounts")
+@SQLRestriction("is_active = 1")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,7 +47,7 @@ public class Account implements UserDetails {
     @Column(name = "email", nullable = false, length = 100)
     private String email;
 
-    @Column(name = "password", length = 100)  // Made nullable for OAuth2 accounts
+    @Column(name = "password", length = 100) // Made nullable for OAuth2 accounts
     private String password;
 
     @Column(name = "name", nullable = false, length = 100)
@@ -45,7 +61,7 @@ public class Account implements UserDetails {
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
     @Column(name = "provider_id", length = 100)
-    private String providerId;  // Google user ID for OAuth2 accounts
+    private String providerId; // Google user ID for OAuth2 accounts
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -54,6 +70,9 @@ public class Account implements UserDetails {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "Role_id", nullable = false)
@@ -69,12 +88,16 @@ public class Account implements UserDetails {
     @JsonManagedReference("account-collections")
     private List<CardCollection> collections;
 
+    // Relationship: Account 1-N ReadingSession
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("account-readingSessions")
+    private List<ReadingSession> readingSessions;
+
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(
-            new SimpleGrantedAuthority("ROLE_" + role.getRoleName())
-        );
+                new SimpleGrantedAuthority("ROLE_" + role.getRoleName()));
     }
 
     @Override
@@ -99,6 +122,6 @@ public class Account implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return Boolean.TRUE.equals(isActive);
     }
 }

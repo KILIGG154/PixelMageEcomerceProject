@@ -1,17 +1,28 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
-import com.example.PixelMageEcomerceProject.dto.request.CollectionItemRequestDTO;
-import com.example.PixelMageEcomerceProject.dto.request.CollectionRequestDTO;
-import com.example.PixelMageEcomerceProject.entity.*;
-import com.example.PixelMageEcomerceProject.repository.*;
-import com.example.PixelMageEcomerceProject.service.interfaces.CollectionService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.PixelMageEcomerceProject.dto.request.CollectionItemRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.CollectionRequestDTO;
+import com.example.PixelMageEcomerceProject.entity.Account;
+import com.example.PixelMageEcomerceProject.entity.Card;
+import com.example.PixelMageEcomerceProject.entity.CardCollection;
+import com.example.PixelMageEcomerceProject.entity.CollectionItem;
+import com.example.PixelMageEcomerceProject.entity.Order;
+import com.example.PixelMageEcomerceProject.entity.OrderItem;
+import com.example.PixelMageEcomerceProject.repository.AccountRepository;
+import com.example.PixelMageEcomerceProject.repository.CardCollectionRepository;
+import com.example.PixelMageEcomerceProject.repository.CardRepository;
+import com.example.PixelMageEcomerceProject.repository.CollectionItemRepository;
+import com.example.PixelMageEcomerceProject.repository.OrderRepository;
+import com.example.PixelMageEcomerceProject.service.interfaces.CollectionService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -67,7 +78,8 @@ public class CollectionServiceImpl implements CollectionService {
                 .orElseThrow(() -> new RuntimeException(
                         "Collection not found with id: " + collectionId + " for customer: " + customerId));
 
-        cardCollectionRepository.delete(collection);
+        collection.setIsActive(false);
+        cardCollectionRepository.save(collection);
     }
 
     @Override
@@ -145,7 +157,8 @@ public class CollectionServiceImpl implements CollectionService {
 
     /**
      * Get all cards owned by a customer.
-     * A card is "owned" when it was purchased through a COMPLETED order with PAID payment status.
+     * A card is "owned" when it was purchased through a COMPLETED order with PAID
+     * payment status.
      *
      * Chain: Account -> Order (COMPLETED + PAID) -> OrderItem -> Card
      */
