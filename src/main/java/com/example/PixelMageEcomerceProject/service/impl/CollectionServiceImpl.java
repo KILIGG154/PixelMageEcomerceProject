@@ -14,7 +14,6 @@ import com.example.PixelMageEcomerceProject.entity.Card;
 import com.example.PixelMageEcomerceProject.entity.CardCollection;
 import com.example.PixelMageEcomerceProject.entity.CollectionItem;
 import com.example.PixelMageEcomerceProject.entity.Order;
-import com.example.PixelMageEcomerceProject.entity.OrderItem;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardCollectionRepository;
 import com.example.PixelMageEcomerceProject.repository.CardRepository;
@@ -171,7 +170,8 @@ public class CollectionServiceImpl implements CollectionService {
 
         return completedOrders.stream()
                 .flatMap(order -> order.getOrderItems().stream())
-                .map(OrderItem::getCard)
+                .flatMap(orderItem -> orderItem.getPack().getPackDetails().stream())
+                .map(packDetail -> packDetail.getCard())
                 .distinct()
                 .collect(Collectors.toList());
     }
@@ -185,6 +185,7 @@ public class CollectionServiceImpl implements CollectionService {
                 .stream()
                 .filter(order -> "COMPLETED".equals(order.getStatus()) && "PAID".equals(order.getPaymentStatus()))
                 .flatMap(order -> order.getOrderItems().stream())
-                .anyMatch(item -> item.getCard().getCardId().equals(cardId));
+                .flatMap(orderItem -> orderItem.getPack().getPackDetails().stream())
+                .anyMatch(packDetail -> packDetail.getCard().getCardId().equals(cardId));
     }
 }
