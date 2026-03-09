@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -27,7 +26,6 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "CARDS")
-@SQLRestriction("is_active = 1")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,8 +36,8 @@ public class Card {
     @Column(name = "card_id")
     private Integer cardId;
 
-    @Column(name = "NFC_UUID", nullable = false, unique = true)
-    private String nfcUuid;
+    @Column(name = "nfc_uid", unique = true)
+    private String nfcUid;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "card_template_id", nullable = false, referencedColumnName = "card_template_id")
@@ -62,8 +60,27 @@ public class Card {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = com.example.PixelMageEcomerceProject.enums.CardProductStatus.PENDING_BIND.name();
+
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
+
+    @Column(name = "production_batch", length = 100)
+    private String productionBatch;
+
+    @Column(name = "card_condition", length = 20)
+    private String cardCondition = "NEW";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_account_id", referencedColumnName = "customer_id")
+    private Account owner;
+
+    @Column(name = "linked_at")
+    private LocalDateTime linkedAt;
+
+    @Column(name = "sold_at")
+    private LocalDateTime soldAt;
 
     // Relationship: Card 1-N CardContent
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

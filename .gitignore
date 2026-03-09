@@ -38,3 +38,4 @@ build/
 .env.local.example
 maven_output_2.log
 .log
+build

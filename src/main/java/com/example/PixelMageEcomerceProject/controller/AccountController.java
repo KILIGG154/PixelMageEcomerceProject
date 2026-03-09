@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -77,7 +76,6 @@ public class AccountController {
      * Get all accounts
      */
     @GetMapping
-    @PreAuthorize("hasRole('admin')")
     @Operation(
             summary = "Get all accounts",
             description = "Retrieve a list of all user accounts in the system"
@@ -100,7 +98,6 @@ public class AccountController {
      * Get account by ID
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
     @Operation(
             summary = "Get account by ID",
             description = "Retrieve account details by customer ID"
@@ -137,7 +134,6 @@ public class AccountController {
      * Get account by email
      */
     @GetMapping("/email/{email}")
-    @PreAuthorize("hasRole('admin') or hasRole('staff')")
     @Operation(
             summary = "Get account by email",
             description = "Retrieve account details by email address"
@@ -310,7 +306,7 @@ public class AccountController {
         // This endpoint will trigger Spring Security's OAuth2 flow automatically
         // Redirect to Google OAuth2 authorization endpoint
         String googleAuthUrl = "/oauth2/authorization/google";
-        
+
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", googleAuthUrl)
                 .build();
@@ -331,12 +327,12 @@ public class AccountController {
     public ResponseEntity<ResponseBase> canLinkOAuth2Account(
             @Parameter(description = "Email address to check", required = true)
             @RequestParam String email) {
-        
+
         boolean canCreate = authenticationService.canCreateOAuth2Account(email);
-        String message = canCreate 
-            ? "Email can be used for OAuth2 authentication" 
+        String message = canCreate
+            ? "Email can be used for OAuth2 authentication"
             : "Email already linked to another OAuth2 provider";
-        
+
         ResponseBase response = new ResponseBase(
             HttpStatus.OK.value(),
             message,
@@ -365,7 +361,7 @@ public class AccountController {
     public ResponseEntity<ResponseBase> getAccountProvider(
             @Parameter(description = "Email address", required = true)
             @PathVariable String email) {
-        
+
         return accountService.getAccountByEmail(email)
                 .map(account -> {
                     Map<String, Object> providerInfo = Map.of(
@@ -374,7 +370,7 @@ public class AccountController {
                         "hasLocalPassword", account.getPassword() != null,
                         "isOAuth2Account", account.getAuthProvider() != AuthProvider.LOCAL
                     );
-                    
+
                     ResponseBase response = new ResponseBase(
                         HttpStatus.OK.value(),
                         "Provider information retrieved",
