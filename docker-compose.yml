@@ -4,7 +4,7 @@ services:
     container_name: pixelmage-postgres
     environment:
       POSTGRES_DB: ExeProject
-      POSTGRES_USER: sa
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: PixelMage@2026
       TZ: Asia/Ho_Chi_Minh
     ports:
