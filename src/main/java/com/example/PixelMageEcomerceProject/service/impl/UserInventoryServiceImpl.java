@@ -12,6 +12,7 @@ import com.example.PixelMageEcomerceProject.entity.UserInventory;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.repository.UserInventoryRepository;
+import com.example.PixelMageEcomerceProject.service.interfaces.UserCollectionProgressService;
 import com.example.PixelMageEcomerceProject.service.interfaces.UserInventoryService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class UserInventoryServiceImpl implements UserInventoryService {
     private final UserInventoryRepository userInventoryRepository;
     private final AccountRepository accountRepository;
     private final CardTemplateRepository cardTemplateRepository;
+    private final UserCollectionProgressService userCollectionProgressService;
 
     @Override
     public UserInventory upsertInventory(Integer userId, Integer cardTemplateId, int quantityChange) {
@@ -31,10 +33,11 @@ public class UserInventoryServiceImpl implements UserInventoryService {
                 userId,
                 cardTemplateId);
 
+        UserInventory savedInventory;
         if (existing.isPresent()) {
             UserInventory inventory = existing.get();
             inventory.setQuantity(inventory.getQuantity() + quantityChange);
-            return userInventoryRepository.save(inventory);
+            savedInventory = userInventoryRepository.save(inventory);
         } else {
             Account account = accountRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("Account not found for id: " + userId));
@@ -47,8 +50,12 @@ public class UserInventoryServiceImpl implements UserInventoryService {
             newInventory.setCardTemplate(template);
             newInventory.setQuantity(Math.max(0, quantityChange));
 
-            return userInventoryRepository.save(newInventory);
+            savedInventory = userInventoryRepository.save(newInventory);
         }
+
+        userCollectionProgressService.recalculateProgressForTemplate(userId, cardTemplateId);
+
+        return savedInventory;
     }
 
     @Override
