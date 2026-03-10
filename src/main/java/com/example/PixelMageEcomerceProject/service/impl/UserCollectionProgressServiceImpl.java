@@ -17,6 +17,7 @@ import com.example.PixelMageEcomerceProject.repository.CardCollectionRepository;
 import com.example.PixelMageEcomerceProject.repository.CollectionItemRepository;
 import com.example.PixelMageEcomerceProject.repository.UserCollectionProgressRepository;
 import com.example.PixelMageEcomerceProject.repository.UserInventoryRepository;
+import com.example.PixelMageEcomerceProject.service.interfaces.CollectionRewardService;
 import com.example.PixelMageEcomerceProject.service.interfaces.UserCollectionProgressService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class UserCollectionProgressServiceImpl implements UserCollectionProgress
     private final UserInventoryRepository userInventoryRepository;
     private final AccountRepository accountRepository;
     private final CardCollectionRepository cardCollectionRepository;
+    private final CollectionRewardService collectionRewardService;
 
     @Override
     public void recalculateProgressForTemplate(Integer userId, Integer cardTemplateId) {
@@ -125,18 +127,11 @@ public class UserCollectionProgressServiceImpl implements UserCollectionProgress
         if (isCompleteNow && !Boolean.TRUE.equals(progress.getIsCompleted())) {
             progress.setIsCompleted(true);
             progress.setCompletedAt(LocalDateTime.now());
-            // Here you would trigger reward grant (idempotent because of isCompleted check
-            // before this line)
-            grantReward(user, collection);
+            collectionRewardService.grantReward(user.getCustomerId(), collection.getCollectionId());
         }
 
         progressRepository.save(progress);
     }
 
-    private void grantReward(Account user, CardCollection collection) {
-        // Implementation for granting reward to User
-        // Check collection.getRewardType() / getRewardData()
-        System.out.println("Granting reward to User " + user.getCustomerId() + " for completing "
-                + collection.getCollectionName());
-    }
+    // Reward logic moved to CollectionRewardService
 }

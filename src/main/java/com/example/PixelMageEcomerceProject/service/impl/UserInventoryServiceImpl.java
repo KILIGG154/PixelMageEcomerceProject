@@ -12,6 +12,7 @@ import com.example.PixelMageEcomerceProject.entity.UserInventory;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.repository.UserInventoryRepository;
+import com.example.PixelMageEcomerceProject.service.interfaces.SetStoryService;
 import com.example.PixelMageEcomerceProject.service.interfaces.UserCollectionProgressService;
 import com.example.PixelMageEcomerceProject.service.interfaces.UserInventoryService;
 
@@ -26,6 +27,7 @@ public class UserInventoryServiceImpl implements UserInventoryService {
     private final AccountRepository accountRepository;
     private final CardTemplateRepository cardTemplateRepository;
     private final UserCollectionProgressService userCollectionProgressService;
+    private final SetStoryService setStoryService;
 
     @Override
     public UserInventory upsertInventory(Integer userId, Integer cardTemplateId, int quantityChange) {
@@ -54,6 +56,7 @@ public class UserInventoryServiceImpl implements UserInventoryService {
         }
 
         userCollectionProgressService.recalculateProgressForTemplate(userId, cardTemplateId);
+        setStoryService.checkAndUnlockStories(userId);
 
         return savedInventory;
     }

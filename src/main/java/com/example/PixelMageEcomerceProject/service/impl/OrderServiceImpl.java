@@ -165,6 +165,25 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order cancelOrder(Integer id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+
+        if (order.getOrderItems() != null) {
+            order.getOrderItems().forEach(item -> {
+                if (item.getPack() != null && "RESERVED".equals(item.getPack().getStatus())) {
+                    Pack pack = item.getPack();
+                    pack.setStatus("STOCKED");
+                    packRepository.save(pack);
+                }
+            });
+        }
+
+        order.setStatus("CANCELLED");
+        return orderRepository.save(order);
+    }
+
+    @Override
     public Optional<Order> getOrderById(Integer id) {
         return orderRepository.findById(id);
     }

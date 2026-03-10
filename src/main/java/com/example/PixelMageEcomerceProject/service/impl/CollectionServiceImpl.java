@@ -1,5 +1,6 @@
 package com.example.PixelMageEcomerceProject.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -7,6 +8,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.PixelMageEcomerceProject.dto.request.AdminCollectionItemRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.AdminCollectionRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.CollectionItemRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.CollectionRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Account;
@@ -46,7 +49,10 @@ public class CollectionServiceImpl implements CollectionService {
         collection.setAccount(account);
         collection.setCollectionName(request.getCollectionName());
         collection.setDescription(request.getDescription());
-        collection.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : false);
+        Boolean isPublic = request.getIsPublic() != null ? request.getIsPublic() : false;
+        collection.setIsPublic(isPublic);
+        collection.setIsVisible(isPublic);
+        collection.setSource("USER");
 
         return cardCollectionRepository.save(collection);
     }
@@ -94,7 +100,55 @@ public class CollectionServiceImpl implements CollectionService {
 
     @Override
     public List<CardCollection> getPublicCollections() {
-        return cardCollectionRepository.findAllPublicCollections();
+        return cardCollectionRepository.findAllVisibleCollections(LocalDateTime.now());
+    }
+
+    @Override
+    public CardCollection createAdminCollection(Integer adminId, AdminCollectionRequestDTO request) {
+        Account admin = accountRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin account not found with id: " + adminId));
+
+        CardCollection collection = new CardCollection();
+        collection.setCollectionName(request.getCollectionName());
+        collection.setDescription(request.getDescription());
+        collection.setCollectionType(
+                request.getCollectionType() != null ? request.getCollectionType() : "STANDARD");
+        collection.setStartTime(request.getStartTime());
+        collection.setEndTime(request.getEndTime());
+        collection.setRewardType(request.getRewardType());
+        collection.setRewardData(request.getRewardData());
+        collection.setIsVisible(request.getIsVisible() != null ? request.getIsVisible() : Boolean.FALSE);
+        collection.setIsPublic(true);
+        collection.setSource("SYSTEM");
+        collection.setCreatedByAdmin(admin);
+
+        CardCollection savedCollection = cardCollectionRepository.save(collection);
+
+        if (request.getItems() != null) {
+            for (AdminCollectionItemRequestDTO itemDto : request.getItems()) {
+                CardTemplate cardTemplate = cardTemplateRepository.findById(itemDto.getCardTemplateId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "CardTemplate not found with id: " + itemDto.getCardTemplateId()));
+
+                CollectionItem item = new CollectionItem();
+                item.setCardCollection(savedCollection);
+                item.setCardTemplate(cardTemplate);
+                item.setRequiredQuantity(
+                        itemDto.getRequiredQuantity() != null ? itemDto.getRequiredQuantity() : 1);
+
+                collectionItemRepository.save(item);
+            }
+        }
+
+        return savedCollection;
+    }
+
+    @Override
+    public CardCollection updateCollectionVisibility(Integer collectionId, Boolean isVisible) {
+        CardCollection collection = cardCollectionRepository.findById(collectionId)
+                .orElseThrow(() -> new RuntimeException("Collection not found with id: " + collectionId));
+        collection.setIsVisible(isVisible != null ? isVisible : collection.getIsVisible());
+        return cardCollectionRepository.save(collection);
     }
 
     // ==================== Collection Items ====================
