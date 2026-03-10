@@ -10,8 +10,8 @@ import com.example.PixelMageEcomerceProject.entity.UserCollectionProgress;
 
 @Repository
 public interface UserCollectionProgressRepository extends JpaRepository<UserCollectionProgress, Integer> {
-    Optional<UserCollectionProgress> findByUserCustomerIdAndCollectionCollectionId(Integer userId,
+    Optional<UserCollectionProgress> findByUser_CustomerIdAndCollection_CollectionId(Integer userId,
             Integer collectionId);
 
-    List<UserCollectionProgress> findByUserCustomerId(Integer userId);
+    List<UserCollectionProgress> findByUser_CustomerId(Integer userId);
 }

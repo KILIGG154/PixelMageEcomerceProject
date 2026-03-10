@@ -52,13 +52,13 @@ public class UserCollectionProgressServiceImpl implements UserCollectionProgress
 
     @Override
     public List<UserCollectionProgress> getUserProgress(Integer userId) {
-        return progressRepository.findByUserCustomerId(userId);
+        return progressRepository.findByUser_CustomerId(userId);
     }
 
     @Override
     public Optional<UserCollectionProgress> getCollectionProgress(Integer userId, Integer collectionId) {
         Optional<UserCollectionProgress> progress = progressRepository
-                .findByUserCustomerIdAndCollectionCollectionId(userId, collectionId);
+                .findByUser_CustomerIdAndCollection_CollectionId(userId, collectionId);
         if (progress.isPresent()) {
             return progress;
         }
@@ -109,7 +109,7 @@ public class UserCollectionProgressServiceImpl implements UserCollectionProgress
         boolean isCompleteNow = (percent >= 100.0);
 
         Optional<UserCollectionProgress> progressOpt = progressRepository
-                .findByUserCustomerIdAndCollectionCollectionId(user.getCustomerId(), collection.getCollectionId());
+                .findByUser_CustomerIdAndCollection_CollectionId(user.getCustomerId(), collection.getCollectionId());
 
         UserCollectionProgress progress;
         if (progressOpt.isPresent()) {

@@ -28,6 +28,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "card_templates")
 @SQLRestriction("is_active = true")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

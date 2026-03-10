@@ -9,7 +9,8 @@ ON CONFLICT (role_id) DO NOTHING;
 
 -- The password is "adminpassword" encrypted with BCrypt
 INSERT INTO Accounts (customer_id, email, password, name, auth_provider, is_active, Role_id, created_at, updated_at) VALUES
-(1, 'admin@pixelmage.com', '$2a$10$pZVTj8enac8omlbdLgypl.2bxHHqGiqFNSr7cvMq3qWbDeoeAvzUG', 'System Admin', 'LOCAL', true, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(1, 'admin@pixelmage.com', '$2a$10$pZVTj8enac8omlbdLgypl.2bxHHqGiqFNSr7cvMq3qWbDeoeAvzUG', 'System Admin', 'LOCAL', true, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'customer@pixelmage.com', '$2a$10$pZVTj8enac8omlbdLgypl.2bxHHqGiqFNSr7cvMq3qWbDeoeAvzUG', 'Test User', 'LOCAL', true, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (customer_id) DO NOTHING;
 
 UPDATE Accounts SET password = '$2a$10$pZVTj8enac8omlbdLgypl.2bxHHqGiqFNSr7cvMq3qWbDeoeAvzUG' WHERE email = 'admin@pixelmage.com';

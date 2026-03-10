@@ -121,6 +121,7 @@ public class CollectionServiceImpl implements CollectionService {
         collection.setIsPublic(true);
         collection.setSource("SYSTEM");
         collection.setCreatedByAdmin(admin);
+        collection.setAccount(admin); // Set owner for admin collection
 
         CardCollection savedCollection = cardCollectionRepository.save(collection);
 
