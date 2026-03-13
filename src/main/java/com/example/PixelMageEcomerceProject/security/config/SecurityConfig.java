@@ -50,7 +50,7 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(form -> form.disable())  
+                .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .exceptionHandling(exception -> exception
                         // Xử lý: Nếu chưa xác thực mà đòi vào endpoint private -> Trả về lỗi 401 JSON, KHÔNG redirect sang Google
@@ -61,14 +61,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - no authentication required
                         .requestMatchers(
-                                "/api/auth/**",      
-                                "/api/accounts/login",       
-                                "/api/accounts/registration", 
+                                "/api/auth/**",
+                                "/api/accounts/login",
+                                "/api/accounts/registration",
                                 "/error",            // <--- QUAN TRỌNG: Phải public endpoint lỗi mặc định của Spring
-                                "/oauth2/**",        
-                                "/login/oauth2/**",  
-                                "/v3/api-docs/**",   
-                                "/swagger-ui/**",    
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
@@ -76,25 +76,25 @@ public class SecurityConfig {
                         ).permitAll()
                         // Protected endpoints - JWT authentication required
                         .requestMatchers(
-                                "/api/payments/**",             
-                                "/api/accounts/**",             
-                                "/api/orders/**",               
-                                "/api/roles/**",                
-                                "/api/suppliers/**",            
-                                "/api/purchase-orders/**",     
-                                "/api/warehouses/**",           
-                                "/api/inventory/**",            
-                                "/api/products/**",             
-                                "/api/order-items/**",          
-                                "/api/cards/**",                
-                                "/api/card-price-tiers/**",     
-                                "/api/card-templates/**",       
-                                "/api/card-contents/**",        
-                                "/api/collections/**",          
-                                "/api/warehouse-transactions/**", 
-                                "/api/v1/**"                    
+                                "/api/payments/**",
+                                "/api/accounts/**",
+                                "/api/orders/**",
+                                "/api/roles/**",
+                                "/api/suppliers/**",
+                                "/api/purchase-orders/**",
+                                "/api/warehouses/**",
+                                "/api/inventory/**",
+                                "/api/products/**",
+                                "/api/order-items/**",
+                                "/api/cards/**",
+                                "/api/card-price-tiers/**",
+                                "/api/card-templates/**",
+                                "/api/card-contents/**",
+                                "/api/collections/**",
+                                "/api/warehouse-transactions/**",
+                                "/api/v1/**"
                         ).authenticated()
-                        .anyRequest().authenticated() 
+                        .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)
