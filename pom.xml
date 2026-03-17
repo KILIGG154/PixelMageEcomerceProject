@@ -126,7 +126,14 @@
 			<artifactId>stripe-java</artifactId>
 			<version>24.16.0</version>
 		</dependency>
+
+		<!-- JavaMailSender cho email transactional -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 	</dependencies>
+
 
 	<build>
 		<plugins>

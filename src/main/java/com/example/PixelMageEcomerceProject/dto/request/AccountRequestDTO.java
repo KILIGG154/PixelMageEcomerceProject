@@ -13,6 +13,5 @@ public class AccountRequestDTO {
     private String password;
     private String name;
     private String phoneNumber;
-    private Integer roleId;
+    private String roleName;
 }
-

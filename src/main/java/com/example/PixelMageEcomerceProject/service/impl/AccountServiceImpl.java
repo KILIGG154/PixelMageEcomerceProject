@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +17,8 @@ import com.example.PixelMageEcomerceProject.entity.Role;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.RoleRepository;
 import com.example.PixelMageEcomerceProject.security.service.AuthenticationService;
+import com.example.PixelMageEcomerceProject.security.service.TokenService;
+import com.example.PixelMageEcomerceProject.service.EmailService;
 import com.example.PixelMageEcomerceProject.service.interfaces.AccountService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,65 +29,160 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final RoleRepository roleRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationService authenticationService;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationService authenticationService;
+    private final TokenService tokenService;
+    private final EmailService emailService;
 
     @Override
     @Transactional
-    public Account createAccount(AccountRequestDTO account) {
-        // Validate email
-        if (existsByEmail(account.getEmail())) {
-            throw new RuntimeException("Email already exists: " + account.getEmail());
+    public Account createAccount(AccountRequestDTO dto) {
+        if (existsByEmail(dto.getEmail())) {
+            throw new RuntimeException("Email already exists: " + dto.getEmail());
+        }
+        if (dto.getRoleName() == null) {
+            dto.setRoleName("USER");
         }
 
-        // Validate roleId is provided
-        if (account.getRoleId() == null) {
-            throw new RuntimeException("Role ID is required");
-        }
-
-        // Get role from database and validate it exists
-        Role role = roleRepository.findById(account.getRoleId())
+        Role role = roleRepository.findByRoleName(dto.getRoleName())
                 .orElseThrow(() -> new RuntimeException(
-                        "Role not found with id: " + account.getRoleId() +
-                                ". Please create the role first using POST /api/roles"));
+                        "Role '" + dto.getRoleName() + "' not found, Please check role name first"));
 
         Account newAccount = new Account();
-        newAccount.setEmail(account.getEmail());
-        newAccount.setPassword(authenticationService.encodePassword(account.getPassword()));
-        newAccount.setName(account.getName());
-        newAccount.setPhoneNumber(account.getPhoneNumber());
+        newAccount.setEmail(dto.getEmail());
+        newAccount.setPassword(passwordEncoder.encode(dto.getPassword()));
+        newAccount.setName(dto.getName());
+        newAccount.setPhoneNumber(dto.getPhoneNumber());
         newAccount.setRole(role);
+        newAccount.setEmailVerified(false); // Phải verify trước khi dùng
 
-        return accountRepository.save(newAccount);
+        Account saved = accountRepository.save(newAccount);
+
+        // Tạo verification token và gửi mail — @Async nên không block response
+        String verifyToken = tokenService.generateVerificationToken(saved.getEmail());
+        emailService.sendVerificationEmail(saved.getEmail(), saved.getName(), verifyToken);
+
+        return saved;
+    }
+
+    /**
+     * Verify email từ token trong link mail.
+     * Dùng @Query bỏ qua SQLRestriction để tìm cả account chưa verify
+     * (emailVerified = false nên isEnabled() = false → SQLRestriction vẫn pass vì
+     * isActive = true)
+     */
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        String email = tokenService.consumeVerificationToken(token);
+        if (email == null) {
+            throw new RuntimeException("Token xác thực không hợp lệ hoặc đã hết hạn");
+        }
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + email));
+
+        if (Boolean.TRUE.equals(account.getEmailVerified())) {
+            return; // Đã verify rồi, idempotent — không throw
+        }
+
+        account.setEmailVerified(true);
+        accountRepository.save(account);
+    }
+
+    /**
+     * Resend verification email nếu user chưa nhận được
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void resendVerificationEmail(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account not found: " + email));
+
+        if (Boolean.TRUE.equals(account.getEmailVerified())) {
+            throw new RuntimeException("Email đã được xác thực");
+        }
+
+        String token = tokenService.generateVerificationToken(email);
+        emailService.sendVerificationEmail(email, account.getName(), token);
+    }
+
+    @Override
+    public Map<String, Object> loginAccount(LoginRequestDTO dto) {
+        Account account = accountRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+        // Check email verified trước khi check password (bảo mật: không lộ thông tin)
+        if (!Boolean.TRUE.equals(account.getEmailVerified())) {
+            throw new DisabledException("Email chưa được xác thực. Vui lòng kiểm tra hộp thư.");
+        }
+
+        if (!passwordEncoder.matches(dto.getPassword(), account.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        String accessToken = authenticationService.generateToken(account);
+        // Mỗi lần login tạo refresh token mới, token cũ tự bị revoke
+        String refreshToken = tokenService.generateRefreshToken(account.getEmail());
+
+        return Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken,
+                "account", account);
+    }
+
+    /**
+     * Dùng refresh token để lấy access token mới mà không cần login lại
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> refreshAccessToken(String refreshToken) {
+        String email = tokenService.validateRefreshToken(refreshToken);
+        if (email == null) {
+            throw new RuntimeException("Refresh token không hợp lệ hoặc đã hết hạn");
+        }
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        String newAccessToken = authenticationService.generateToken(account);
+
+        return Map.of("accessToken", newAccessToken);
+    }
+
+    /**
+     * Logout: blacklist access token + revoke refresh token
+     */
+    @Override
+    public void logout(String accessToken, String refreshToken, long tokenRemainingMillis) {
+        tokenService.blacklistAccessToken(accessToken, tokenRemainingMillis);
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            tokenService.revokeRefreshToken(refreshToken);
+        }
     }
 
     @Override
     @Transactional
     public Account updateAccount(Integer customerId, Account account) {
-        Account existingAccount = accountRepository.findById(customerId)
+        Account existing = accountRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Account not found with id: " + customerId));
 
-        // Check if email is being changed and if new email already exists
-        if (!existingAccount.getEmail().equals(account.getEmail()) &&
-                existsByEmail(account.getEmail())) {
+        if (!existing.getEmail().equals(account.getEmail()) && existsByEmail(account.getEmail())) {
             throw new RuntimeException("Email already exists: " + account.getEmail());
         }
 
-        // Update fields
-        existingAccount.setEmail(account.getEmail());
-        existingAccount.setPassword(authenticationService.encodePassword(account.getPassword()));
-        existingAccount.setName(account.getName());
-        existingAccount.setPhoneNumber(account.getPhoneNumber());
-
+        existing.setEmail(account.getEmail());
+        existing.setName(account.getName());
+        existing.setPhoneNumber(account.getPhoneNumber());
+        // Password chỉ update nếu được truyền vào — không encode lại nếu null
+        if (account.getPassword() != null && !account.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(account.getPassword()));
+        }
         if (account.getRole() != null) {
-            existingAccount.setRole(account.getRole());
+            existing.setRole(account.getRole());
         }
 
-        return accountRepository.save(existingAccount);
+        return accountRepository.save(existing);
     }
 
     @Override
@@ -95,6 +192,8 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new RuntimeException("Account not found with id: " + customerId));
         account.setIsActive(false);
         accountRepository.save(account);
+        // Revoke refresh token khi account bị xóa
+        tokenService.revokeUserRefreshToken(account.getEmail());
     }
 
     @Override
@@ -119,20 +218,5 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return accountRepository.existsByEmail(email);
-    }
-
-    @Override
-    public Map<String, Object> loginAccount(LoginRequestDTO loginRequestDTO) {
-        Account account = accountRepository.findByEmail(loginRequestDTO.getEmail()).orElseThrow(
-                () -> new BadCredentialsException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(loginRequestDTO.getPassword(), account.getPassword())) {
-            throw new BadCredentialsException("Invalid email or password");
-        }
-        String token = authenticationService.generateToken(account);
-
-        return Map.of(
-                "accessToken", token,
-                "account", account);
     }
 }
