@@ -1,11 +1,12 @@
- package com.example.PixelMageEcomerceProject.repository;
-
-import com.example.PixelMageEcomerceProject.entity.Promotion;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+package com.example.PixelMageEcomerceProject.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.example.PixelMageEcomerceProject.entity.Promotion;
 
 @Repository
 public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
@@ -14,4 +15,3 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
 
     List<Promotion> findByStartDateBeforeAndEndDateAfter(LocalDateTime start, LocalDateTime end);
 }
-
