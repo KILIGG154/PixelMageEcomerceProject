@@ -16,7 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.PixelMageEcomerceProject.dto.request.AccountRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ChangePasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ForgotPasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ResetPasswordRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.Account;
@@ -32,7 +36,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/accounts")
 @RequiredArgsConstructor
@@ -54,7 +60,7 @@ public class AccountController {
                         @ApiResponse(responseCode = "201", description = "Đăng ký thành công, chờ xác thực email"),
                         @ApiResponse(responseCode = "400", description = "Email đã tồn tại hoặc dữ liệu không hợp lệ")
         })
-        public ResponseEntity<ResponseBase<Account>> createAccount(@RequestBody AccountRequestDTO dto) {
+        public ResponseEntity<ResponseBase<Account>> createAccount(@RequestBody RegisterRequestDTO dto) {
                 try {
                         return ResponseBase.created(
                                         accountService.createAccount(dto),
@@ -186,6 +192,30 @@ public class AccountController {
                                 canLink ? "Email có thể dùng cho OAuth2" : "Email đã được link với provider khác");
         }
 
+        @PostMapping("/auth/forgot-password")
+        @Operation(summary = "Quên mật khẩu", description = "Gửi email chứa link đặt lại mật khẩu. Chỉ áp dụng cho tài khoản LOCAL.")
+        public ResponseEntity<ResponseBase<Void>> forgotPassword(@RequestBody ForgotPasswordRequestDTO dto) {
+                try {
+                        accountService.forgotPassword(dto);
+                        return ResponseBase.success("Nếu email hợp lệ, hệ thống sẽ gửi liên kết khôi phục.");
+                } catch (RuntimeException e) {
+                        log.warn("Lỗi Forgot Password (đã bị ẩn với FE): {}", e.getMessage());
+                        // Security best practice: Tránh lộ lọt email có tồn tại hay không
+                        return ResponseBase.success("Nếu email hợp lệ, hệ thống sẽ gửi liên kết khôi phục.");
+                }
+        }
+
+        @PostMapping("/auth/reset-password")
+        @Operation(summary = "Đặt lại mật khẩu", description = "Cập nhật mật khẩu mới bằng token lấy từ email.")
+        public ResponseEntity<ResponseBase<Void>> resetPassword(@RequestBody ResetPasswordRequestDTO dto) {
+                try {
+                        accountService.resetPassword(dto);
+                        return ResponseBase.success("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
+                } catch (RuntimeException e) {
+                        return ResponseBase.error(HttpStatus.BAD_REQUEST, e.getMessage());
+                }
+        }
+
         // =========================================================
         // Account CRUD — protected, cần JWT
         // =========================================================
@@ -216,20 +246,37 @@ public class AccountController {
         }
 
         @PutMapping("/{id}")
-        @Operation(summary = "Cập nhật account", description = "Cho phép cập nhật: name, phoneNumber, email, password. "
+        @Operation(summary = "Cập nhật account", description = "Cho phép cập nhật: name, phoneNumber, avatarUrl. "
                         +
-                        "Không thể đổi role hay authProvider qua endpoint này.")
+                        "Không thể đổi vai trò, email, hay mật khẩu qua endpoint này.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
-                        @ApiResponse(responseCode = "400", description = "Email mới đã tồn tại"),
                         @ApiResponse(responseCode = "404", description = "Không tìm thấy account")
         })
         public ResponseEntity<ResponseBase<Account>> updateAccount(
                         @PathVariable Integer id,
-                        @RequestBody Account account) {
+                        @RequestBody UpdateProfileRequestDTO dto) {
                 try {
-                        return ResponseBase.ok(accountService.updateAccount(id, account),
+                        return ResponseBase.ok(accountService.updateAccount(id, dto),
                                         "Account updated successfully");
+                } catch (RuntimeException e) {
+                        return ResponseBase.error(HttpStatus.BAD_REQUEST, e.getMessage());
+                }
+        }
+
+        @PutMapping("/{id}/password")
+        @Operation(summary = "Đổi mật khẩu", description = "Yêu cầu mật khẩu cũ và mới. Chỉ áp dụng cho tài khoản LOCAL.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"),
+                        @ApiResponse(responseCode = "400", description = "Mật khẩu cũ không chính xác hoặc lỗi khác"),
+                        @ApiResponse(responseCode = "404", description = "Không tìm thấy account")
+        })
+        public ResponseEntity<ResponseBase<Void>> changePassword(
+                        @PathVariable Integer id,
+                        @RequestBody ChangePasswordRequestDTO dto) {
+                try {
+                        accountService.changePassword(id, dto);
+                        return ResponseBase.success("Đổi mật khẩu thành công.");
                 } catch (RuntimeException e) {
                         return ResponseBase.error(HttpStatus.BAD_REQUEST, e.getMessage());
                 }

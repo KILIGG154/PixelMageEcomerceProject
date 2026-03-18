@@ -1,6 +1,10 @@
 package com.example.PixelMageEcomerceProject.service.interfaces;
 
-import com.example.PixelMageEcomerceProject.dto.request.AccountRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ChangePasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ForgotPasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ResetPasswordRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Account;
 
@@ -10,9 +14,15 @@ import java.util.Optional;
 
 public interface AccountService {
 
-    Account createAccount(AccountRequestDTO account);
+    Account createAccount(RegisterRequestDTO account);
 
-    Account updateAccount(Integer customerId, Account account);
+    Account updateAccount(Integer customerId, UpdateProfileRequestDTO account);
+
+    void changePassword(Integer customerId, ChangePasswordRequestDTO dto);
+
+    void forgotPassword(ForgotPasswordRequestDTO dto);
+
+    void resetPassword(ResetPasswordRequestDTO dto);
 
     void deleteAccount(Integer customerId);
 

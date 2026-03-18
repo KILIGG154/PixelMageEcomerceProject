@@ -10,7 +10,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.PixelMageEcomerceProject.dto.request.AccountRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ChangePasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ForgotPasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ResetPasswordRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.Role;
@@ -36,7 +40,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public Account createAccount(AccountRequestDTO dto) {
+    public Account createAccount(RegisterRequestDTO dto) {
         if (existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email already exists: " + dto.getEmail());
         }
@@ -163,26 +167,69 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public Account updateAccount(Integer customerId, Account account) {
+    public Account updateAccount(Integer customerId, UpdateProfileRequestDTO dto) {
         Account existing = accountRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Account not found with id: " + customerId));
 
-        if (!existing.getEmail().equals(account.getEmail()) && existsByEmail(account.getEmail())) {
-            throw new RuntimeException("Email already exists: " + account.getEmail());
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            existing.setName(dto.getName());
         }
-
-        existing.setEmail(account.getEmail());
-        existing.setName(account.getName());
-        existing.setPhoneNumber(account.getPhoneNumber());
-        // Password chỉ update nếu được truyền vào — không encode lại nếu null
-        if (account.getPassword() != null && !account.getPassword().isBlank()) {
-            existing.setPassword(passwordEncoder.encode(account.getPassword()));
+        if (dto.getPhoneNumber() != null && !dto.getPhoneNumber().isBlank()) {
+            existing.setPhoneNumber(dto.getPhoneNumber());
         }
-        if (account.getRole() != null) {
-            existing.setRole(account.getRole());
+        if (dto.getAvatarUrl() != null && !dto.getAvatarUrl().isBlank()) {
+            existing.setAvatarUrl(dto.getAvatarUrl());
         }
 
         return accountRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Integer customerId, ChangePasswordRequestDTO dto) {
+        Account account = accountRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Account not found with id: " + customerId));
+
+        if (account.getAuthProvider() != com.example.PixelMageEcomerceProject.enums.AuthProvider.LOCAL) {
+            throw new RuntimeException("Tài khoản này đăng nhập qua Google, không thể đổi mật khẩu.");
+        }
+
+        if (account.getPassword() == null || !passwordEncoder.matches(dto.getOldPassword(), account.getPassword())) {
+            throw new BadCredentialsException("Mật khẩu cũ không chính xác.");
+        }
+
+        account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        accountRepository.save(account);
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequestDTO dto) {
+        Account account = accountRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Account not found with email: " + dto.getEmail()));
+
+        if (account.getAuthProvider() != com.example.PixelMageEcomerceProject.enums.AuthProvider.LOCAL) {
+            throw new RuntimeException("Tài khoản này đăng nhập qua Google, không thể đặt lại mật khẩu.");
+        }
+
+        // Tạo token và gửi mail
+        String token = tokenService.generateVerificationToken(account.getEmail());
+        emailService.sendResetPasswordEmail(account.getEmail(), account.getName(), token);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO dto) {
+        String email = tokenService.consumeVerificationToken(dto.getToken());
+        if (email == null) {
+            throw new RuntimeException("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
+        }
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Account not found for email: " + email));
+
+        account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        accountRepository.save(account);
     }
 
     @Override

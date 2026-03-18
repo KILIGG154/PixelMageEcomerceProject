@@ -18,12 +18,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    // Nối FE vào thì mở khoá cái này và comment backendUrl
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    // @Value("${app.backend.url}")
-    // private String backendUrl;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -36,9 +33,7 @@ public class EmailService {
      */
     @Async
     public void sendVerificationEmail(String toEmail, String name, String token) {
-        // Nối FE vào thì mở khoá cái này và comment backendUrl
         String verifyUrl = frontendUrl + "/auth/verify?token=" + token;
-        // String verifyUrl = backendUrl + "/api/accounts/auth/verify?token=" + token;
 
         String html = """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
@@ -86,8 +81,6 @@ public class EmailService {
     @Async
     public void sendResetPasswordEmail(String toEmail, String name, String token) {
         String resetUrl = frontendUrl + "/auth/reset-password?token=" + token;
-        // String resetUrl = backendUrl + "/api/accounts/auth/reset-password?token=" +
-        // token;
 
         String html = """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">

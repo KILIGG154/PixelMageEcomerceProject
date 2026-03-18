@@ -1,6 +1,5 @@
 package com.example.PixelMageEcomerceProject.entity;
 
-import com.example.PixelMageEcomerceProject.entity.CardTemplate;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
