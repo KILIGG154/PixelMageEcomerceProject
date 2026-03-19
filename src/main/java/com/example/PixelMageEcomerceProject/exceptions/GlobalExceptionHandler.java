@@ -62,7 +62,17 @@ public class GlobalExceptionHandler {
                 return ResponseBase.error(HttpStatus.FORBIDDEN, ex.getMessage());
         }
 
-        // ── End TASK-D04 handlers ────────────────────────────────────────────────
+        // ── End TASK-D04 handlers ─────────────────────────────────────────
+
+        // ── TASK-05 handlers ─────────────────────────────────────────
+
+        @ExceptionHandler(TokenExpiredException.class)
+        public ResponseEntity<ResponseBase<Void>> handleTokenExpired(TokenExpiredException ex) {
+                log.warn("Unlink verification token expired: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.GONE, ex.getMessage());
+        }
+
+        // ── End TASK-05 handlers ────────────────────────────────────────────────
 
         @ExceptionHandler(PaymentNotFoundException.class)
         public ResponseEntity<ResponseBase<Void>> handlePaymentNotFoundException(PaymentNotFoundException ex,

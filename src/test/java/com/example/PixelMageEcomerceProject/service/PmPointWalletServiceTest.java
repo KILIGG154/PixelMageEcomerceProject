@@ -2,7 +2,6 @@ package com.example.PixelMageEcomerceProject.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,7 +40,7 @@ public class PmPointWalletServiceTest {
     public void testExchangeForVoucher_Success() {
         Integer userId = 1;
         PmPointWallet wallet = new PmPointWallet(1L, userId, 1200);
-        
+
         when(pmPointWalletRepository.findByUserId(userId)).thenReturn(Optional.of(wallet));
 
         pmPointWalletService.exchangeForVoucher(userId);
@@ -55,7 +54,7 @@ public class PmPointWalletServiceTest {
     public void testExchangeForVoucher_InsufficientBalance() {
         Integer userId = 1;
         PmPointWallet wallet = new PmPointWallet(1L, userId, 900);
-        
+
         when(pmPointWalletRepository.findByUserId(userId)).thenReturn(Optional.of(wallet));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
@@ -71,7 +70,7 @@ public class PmPointWalletServiceTest {
     public void testCredit_Success() {
         Integer userId = 1;
         PmPointWallet wallet = new PmPointWallet(1L, userId, 500);
-        
+
         when(pmPointWalletRepository.findByUserId(userId)).thenReturn(Optional.of(wallet));
 
         pmPointWalletService.credit(userId, 50);

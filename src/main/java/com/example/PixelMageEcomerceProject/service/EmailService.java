@@ -103,6 +103,75 @@ public class EmailService {
     }
 
     // =========================================================
+    // TASK-05 — Unlink Request email methods
+    // =========================================================
+
+    /**
+     * Gửi email xác nhận yêu cầu hủy liên kết thẻ NFC.
+     * Token có hiệu lực 10 phút — link verify trỏ về BE endpoint (permit-all).
+     */
+    @Async
+    public void sendUnlinkVerificationEmail(String toEmail, String name, String token) {
+        String verifyUrl = frontendUrl + "/api/unlink-requests/verify?token=" + token;
+
+        String html = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                    <h2 style="color: #E2884A;">Xác nhận yêu cầu huỷ liên kết thẻ</h2>
+                    <p>Xin chào <strong>%s</strong>,</p>
+                    <p>Chúng tôi nhận được yêu cầu huỷ liên kết thẻ NFC của bạn.</p>
+                    <p>Nhấn vào nút bên dưới để xác nhận yêu cầu:</p>
+                    <a href="%s"
+                       style="display:inline-block; padding:12px 24px; background:#E2884A;
+                              color:#fff; text-decoration:none; border-radius:6px; margin:16px 0;">
+                        Xác nhận yêu cầu huỷ liên kết
+                    </a>
+                    <p style="color:#888; font-size:13px;">
+                        Link có hiệu lực trong 10 phút.<br>
+                        Nếu bạn không gửi yêu cầu này, hãy bỏ qua email này.
+                    </p>
+                </div>
+                """.formatted(name, verifyUrl);
+
+        sendHtmlEmail(toEmail, "Xác nhận yêu cầu huỷ liên kết thẻ PixelMage", html);
+    }
+
+    /**
+     * Gửi email thông báo Staff đã duyệt yêu cầu hủy liên kết.
+     */
+    @Async
+    public void sendUnlinkApprovedEmail(String toEmail, String name, String nfcUid) {
+        String html = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                    <h2 style="color: #4AE27A;">Yêu cầu huỷ liên kết đã được duyệt</h2>
+                    <p>Xin chào <strong>%s</strong>,</p>
+                    <p>Yêu cầu huỷ liên kết thẻ <strong>%s</strong> của bạn đã được phê duyệt.</p>
+                    <p>Thẻ đã được huỷ liên kết thành công khỏi tài khoản của bạn.</p>
+                    <p style="color:#888; font-size:13px;">Cảm ơn bạn đã sử dụng PixelMage.</p>
+                </div>
+                """.formatted(name, nfcUid);
+
+        sendHtmlEmail(toEmail, "Yêu cầu huỷ liên kết thẻ đã được duyệt — PixelMage", html);
+    }
+
+    /**
+     * Gửi email thông báo Staff đã từ chối yêu cầu hủy liên kết.
+     */
+    @Async
+    public void sendUnlinkRejectedEmail(String toEmail, String name, String staffNote) {
+        String html = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                    <h2 style="color: #E24A4A;">Yêu cầu huỷ liên kết bị từ chối</h2>
+                    <p>Xin chào <strong>%s</strong>,</p>
+                    <p>Yêu cầu huỷ liên kết thẻ của bạn đã bị từ chối.</p>
+                    <p>Lý do: <em>%s</em></p>
+                    <p style="color:#888; font-size:13px;">Nếu cần hỗ trợ, hãy liên hệ đội ngũ PixelMage.</p>
+                </div>
+                """.formatted(name, staffNote != null ? staffNote : "Không có lý do cụ thể");
+
+        sendHtmlEmail(toEmail, "Yêu cầu huỷ liên kết thẻ bị từ chối — PixelMage", html);
+    }
+
+    // =========================================================
     // Private helper
     // =========================================================
 

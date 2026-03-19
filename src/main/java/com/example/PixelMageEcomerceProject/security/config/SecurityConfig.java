@@ -71,7 +71,8 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api-docs/**",
                                 "/ws/**",
-                                "/ws/notifications/**"
+                                "/ws/notifications/**",
+                                "/api/unlink-requests/verify" // TASK-05: email link click, no Bearer token
                         ).permitAll()
                         // Protected endpoints - JWT authentication required
                         .requestMatchers(
