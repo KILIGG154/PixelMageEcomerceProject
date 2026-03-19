@@ -31,8 +31,10 @@ import com.example.PixelMageEcomerceProject.service.interfaces.CardTemplateServi
 import com.example.PixelMageEcomerceProject.service.interfaces.TarotReadingService;
 import com.example.PixelMageEcomerceProject.service.interfaces.UserInventoryService;
 import com.example.PixelMageEcomerceProject.exceptions.InsufficientCardsException;
+import com.example.PixelMageEcomerceProject.exceptions.GuestReadingLimitException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 
 @Service
 public class TarotReadingServiceImpl implements TarotReadingService {
@@ -88,6 +90,24 @@ public class TarotReadingServiceImpl implements TarotReadingService {
             if (userCount < spread.getMinCardsRequired()) {
                 throw new InsufficientCardsException(
                         "Cần ít nhất " + spread.getMinCardsRequired() + " lá. Bạn đang có " + userCount);
+            }
+        } else {
+            // EXPLORE mode guest reading limit
+            boolean hasLinkedCards = userInventoryService.getLinkedCardCount(accountId) > 0;
+            if (!hasLinkedCards) {
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime usedAt = account.getGuestReadingUsedAt();
+                boolean usedToday = usedAt != null && usedAt.toLocalDate().equals(now.toLocalDate());
+                
+                if (usedToday) {
+                    throw new GuestReadingLimitException(
+                        "Bạn đã dùng lượt đọc thử hôm nay. " +
+                        "Quay lại sau 00:00 hoặc mua Pack để đọc không giới hạn."
+                    );
+                }
+                
+                account.setGuestReadingUsedAt(now);
+                accountRepository.save(account);
             }
         }
 
@@ -259,5 +279,11 @@ public class TarotReadingServiceImpl implements TarotReadingService {
         }
         sb.append("\n(Được cung cấp bởi Cơ chế Lốp Dự Phòng Local-Fallback).");
         return sb.toString();
+    }
+
+    @Override
+    public List<ReadingSession> getSessionsByAccount(Integer accountId) {
+        return sessionRepository.findByAccount_CustomerIdAndMode(accountId,
+                com.example.PixelMageEcomerceProject.enums.ReadingSessionMode.YOUR_DECK);
     }
 }

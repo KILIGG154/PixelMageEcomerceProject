@@ -13,4 +13,5 @@ public interface TarotReadingService {
     Map<String, Object> drawCards(Integer sessionId, boolean allowReversed);
 
     Map<String, Object> interpretSession(Integer sessionId);
+    List<com.example.PixelMageEcomerceProject.entity.ReadingSession> getSessionsByAccount(Integer accountId);
 }
