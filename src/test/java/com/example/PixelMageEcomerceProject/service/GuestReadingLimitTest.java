@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.ReadingSession;
@@ -38,6 +40,12 @@ class GuestReadingLimitTest {
     @Mock
     private UserInventoryService userInventoryService;
 
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
     @InjectMocks
     private TarotReadingServiceImpl tarotReadingService;
 
@@ -58,6 +66,9 @@ class GuestReadingLimitTest {
         when(spreadRepository.findById(anyInt())).thenReturn(Optional.of(spread));
         when(accountRepository.findById(anyInt())).thenReturn(Optional.of(guestAccount));
         when(sessionRepository.save(any(ReadingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Mock redis opsForValue for EXPLORE session creation TTL set
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test

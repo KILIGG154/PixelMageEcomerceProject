@@ -54,6 +54,16 @@ public class GlobalExceptionHandler {
 
         // ── End TASK-01 handlers ─────────────────────────────────────────────────
 
+        // ── TASK-D04 handlers ───────────────────────────────────────────────────
+
+        @ExceptionHandler(StoryNotUnlockedException.class)
+        public ResponseEntity<ResponseBase<Void>> handleStoryNotUnlocked(StoryNotUnlockedException ex) {
+                log.warn("Story access denied: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.FORBIDDEN, ex.getMessage());
+        }
+
+        // ── End TASK-D04 handlers ────────────────────────────────────────────────
+
         @ExceptionHandler(PaymentNotFoundException.class)
         public ResponseEntity<ResponseBase<Void>> handlePaymentNotFoundException(PaymentNotFoundException ex,
                         WebRequest request) {

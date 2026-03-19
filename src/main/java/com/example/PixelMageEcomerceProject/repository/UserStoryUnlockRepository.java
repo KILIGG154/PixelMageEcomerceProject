@@ -12,6 +12,8 @@ public interface UserStoryUnlockRepository extends JpaRepository<UserStoryUnlock
 
     boolean existsByUser_CustomerIdAndStory_StoryId(Integer userId, Integer storyId);
 
+    boolean existsByUser_CustomerIdAndStory_StoryIdAndIsActiveTrue(Integer userId, Integer storyId);
+
     java.util.Optional<UserStoryUnlock> findByUser_CustomerIdAndStory_StoryId(Integer userId, Integer storyId);
 
     List<UserStoryUnlock> findByUser_CustomerId(Integer userId);

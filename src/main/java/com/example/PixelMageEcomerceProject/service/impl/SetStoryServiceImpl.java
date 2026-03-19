@@ -8,10 +8,12 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.PixelMageEcomerceProject.dto.response.SetStoryResponse;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.SetStory;
 import com.example.PixelMageEcomerceProject.entity.UserInventory;
 import com.example.PixelMageEcomerceProject.entity.UserStoryUnlock;
+import com.example.PixelMageEcomerceProject.exceptions.StoryNotUnlockedException;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.SetStoryRepository;
 import com.example.PixelMageEcomerceProject.repository.UserInventoryRepository;
@@ -131,6 +133,43 @@ public class SetStoryServiceImpl implements SetStoryService {
     public SetStory getStoryById(Integer id) {
         return setStoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Story not found with id: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SetStoryResponse getStoryById(Integer storyId, Integer userId) {
+        SetStory story = setStoryRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found with id: " + storyId));
+
+        boolean isUnlocked = userStoryUnlockRepository
+                .existsByUser_CustomerIdAndStory_StoryIdAndIsActiveTrue(userId, storyId);
+
+        if (!isUnlocked) {
+            throw new StoryNotUnlockedException(
+                    "Bạn chưa mở khóa story này. Hoàn thành bộ thẻ để truy cập.");
+        }
+
+        return toResponse(story);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SetStoryResponse getStoryByIdNoGate(Integer storyId) {
+        SetStory story = setStoryRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found with id: " + storyId));
+        return toResponse(story);
+    }
+
+    private SetStoryResponse toResponse(SetStory story) {
+        return new SetStoryResponse(
+                story.getStoryId(),
+                story.getTitle(),
+                story.getContent(),
+                story.getRequiredTemplateIds(),
+                story.getCoverImagePath(),
+                story.getIsActive(),
+                story.getCreatedAt(),
+                story.getUpdatedAt());
     }
 
     @Override

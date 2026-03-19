@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.PixelMageEcomerceProject.dto.request.SetStoryRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
+import com.example.PixelMageEcomerceProject.dto.response.SetStoryResponse;
 import com.example.PixelMageEcomerceProject.entity.SetStory;
 import com.example.PixelMageEcomerceProject.service.interfaces.SetStoryService;
 
@@ -67,29 +69,29 @@ public class SetStoryController {
         }
 
         @GetMapping("/stories/{id}")
-        @Operation(summary = "Get story detail", description = "Return story content only if the story has been unlocked for the given user")
+        @PreAuthorize("hasRole('CUSTOMER')")
+        @Operation(summary = "Get story detail (Customer)", description = "Returns story content only if the story is unlocked (isActive=true) for the given user. Returns 403 if story not unlocked or revoked.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Story retrieved successfully", content = @Content(schema = @Schema(implementation = ResponseBase.class))),
-                        @ApiResponse(responseCode = "403", description = "Story is locked", content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+                        @ApiResponse(responseCode = "403", description = "Story locked — user has no active unlock", content = @Content(schema = @Schema(implementation = ResponseBase.class))),
                         @ApiResponse(responseCode = "404", description = "Story not found", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
         })
-        public ResponseEntity<ResponseBase<SetStory>> getStoryDetail(@PathVariable Integer id,
+        public ResponseEntity<ResponseBase<SetStoryResponse>> getStoryDetail(
+                        @PathVariable Integer id,
                         @RequestParam Integer userId) {
-                SetStory story;
-                try {
-                        story = setStoryService.getStoryById(id);
-                } catch (RuntimeException e) {
-                        return ResponseBase.error(HttpStatus.NOT_FOUND, "Story not found with id: " + id);
-                }
+                // Unlock gate is enforced in service — StoryNotUnlockedException bubbles to GlobalExceptionHandler → 403
+                return ResponseBase.ok(setStoryService.getStoryById(id, userId), "Story retrieved successfully");
+        }
 
-                boolean unlocked = setStoryService.getUnlockedStories(userId).stream()
-                                .anyMatch(s -> s.getStoryId().equals(id));
-
-                if (!unlocked) {
-                        return ResponseBase.error(HttpStatus.FORBIDDEN, "Story is locked for this user");
-                }
-
-                return ResponseBase.ok(story, "Story retrieved successfully");
+        @GetMapping("/staff/stories/{id}")
+        @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+        @Operation(summary = "Get story detail (Staff/Admin)", description = "Returns full story content with no unlock check. Staff and Admin bypass.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Story retrieved successfully", content = @Content(schema = @Schema(implementation = ResponseBase.class))),
+                        @ApiResponse(responseCode = "404", description = "Story not found", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+        })
+        public ResponseEntity<ResponseBase<SetStoryResponse>> getStoryDetailStaff(@PathVariable Integer id) {
+                return ResponseBase.ok(setStoryService.getStoryByIdNoGate(id), "Story retrieved successfully");
         }
 
         @PostMapping("/admin/stories")
