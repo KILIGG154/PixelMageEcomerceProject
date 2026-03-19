@@ -31,7 +31,8 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
 
         String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/error")
                 .queryParam("error", "oauth2_failed")
-                .queryParam("message", exception.getMessage())
+                .queryParam("message", "Đăng nhập Google thất bại, vui lòng thử lại")
+                // .queryParam("message", exception.getMessage())
                 .build()
                 .toUriString();
 

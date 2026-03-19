@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.example</groupId>
 	<artifactId>PixelMageEcomerceProject</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>PixelMageEcomerceProject</name>
 	<description>Demo project for Spring Boot</description>
 	<url />
@@ -126,7 +126,14 @@
 			<artifactId>stripe-java</artifactId>
 			<version>24.16.0</version>
 		</dependency>
+
+		<!-- JavaMailSender cho email transactional -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 	</dependencies>
+
 
 	<build>
 		<plugins>

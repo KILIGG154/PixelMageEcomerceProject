@@ -13,21 +13,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.example.PixelMageEcomerceProject.enums.AuthProvider;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +28,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Account implements UserDetails {
 
     @Id
@@ -49,7 +39,8 @@ public class Account implements UserDetails {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "password", length = 100) // Made nullable for OAuth2 accounts
+    @Column(name = "password", length = 100)
+    @JsonIgnore // Không bao giờ trả password ra response
     private String password;
 
     @Column(name = "name", nullable = false, length = 100)
@@ -58,12 +49,27 @@ public class Account implements UserDetails {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    // Email verification
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token", length = 200)
+    @JsonIgnore
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    @JsonIgnore
+    private LocalDateTime verificationTokenExpiry;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider", nullable = false, length = 20)
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
     @Column(name = "provider_id", length = 100)
-    private String providerId; // Google user ID for OAuth2 accounts
+    private String providerId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -80,22 +86,19 @@ public class Account implements UserDetails {
     @JoinColumn(name = "Role_id", nullable = false)
     private Role role;
 
-    // Relationship: Account 1-N Order
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("account-orders")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private List<Order> orders;
 
-    // Relationship: Account 1-N CardCollection
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("account-collections")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private List<CardCollection> collections;
 
-    // Relationship: Account 1-N ReadingSession
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("account-readingSessions")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private List<ReadingSession> readingSessions;
 
     // UserDetails implementation
@@ -127,6 +130,7 @@ public class Account implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return Boolean.TRUE.equals(isActive);
+        // Account phải active VÀ đã verify email mới được dùng
+        return Boolean.TRUE.equals(isActive) && Boolean.TRUE.equals(emailVerified);
     }
 }

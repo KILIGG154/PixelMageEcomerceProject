@@ -36,7 +36,7 @@ public class RedisConfig {
                 JsonTypeInfo.As.PROPERTY
         );
 
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(mapper);
+        GenericJackson2JsonRedisSerializer  jsonSerializer = new GenericJackson2JsonRedisSerializer(mapper);
 
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());

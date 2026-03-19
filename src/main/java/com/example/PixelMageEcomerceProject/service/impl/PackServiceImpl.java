@@ -16,7 +16,6 @@ import com.example.PixelMageEcomerceProject.entity.Product;
 import com.example.PixelMageEcomerceProject.enums.CardProductStatus;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardRepository;
-import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.repository.PackDetailRepository;
 import com.example.PixelMageEcomerceProject.repository.PackRepository;
 import com.example.PixelMageEcomerceProject.repository.ProductRepository;
@@ -33,7 +32,6 @@ public class PackServiceImpl implements PackService {
     private final PackDetailRepository packDetailRepository;
     private final ProductRepository productRepository;
     private final AccountRepository accountRepository;
-    private final CardTemplateRepository cardTemplateRepository;
     private final CardRepository cardRepository;
 
     private static final int CARDS_PER_PACK = 3;
