@@ -127,10 +127,10 @@ public class PackServiceImpl implements PackService {
     }
 
     @Override
-    public Pack updatePackStatus(Integer packId, String status) {
+    public Pack updatePackStatus(Integer packId, PackStatus status) {
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new RuntimeException("Pack not found: " + packId));
-        pack.setStatus(PackStatus.valueOf(status));
+        pack.setStatus(status);
         return packRepository.save(pack);
     }
 
@@ -145,12 +145,12 @@ public class PackServiceImpl implements PackService {
     }
 
     @Override
-    public List<Pack> getPacksByStatus(String status) {
+    public List<Pack> getPacksByStatus(PackStatus status) {
         return packRepository.findByStatus(status);
     }
 
     @Override
-    public List<Pack> getPacksByProductAndStatus(Integer productId, String status) {
+    public List<Pack> getPacksByProductAndStatus(Integer productId, PackStatus status) {
         return packRepository.findByProductProductIdAndStatus(productId, status);
     }
 

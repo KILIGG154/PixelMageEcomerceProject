@@ -25,13 +25,7 @@ public class AuthenticationService {
     }
 
     public String generateToken(Account account) {
-        return jwtTokenProvider.generateToken(
-            org.springframework.security.core.userdetails.User.builder()
-                .username(account.getEmail())
-                .password(account.getPassword() != null ? account.getPassword() : "")
-                .authorities(account.getAuthorities())
-                .build()
-        );
+        return jwtTokenProvider.generateToken(account);
     }
 
     /**

@@ -5,19 +5,20 @@ import java.util.Optional;
 
 import com.example.PixelMageEcomerceProject.dto.request.PackRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Pack;
+import com.example.PixelMageEcomerceProject.enums.PackStatus;
 
 public interface PackService {
     Pack createPack(PackRequestDTO requestDTO); // This should run RNG to select cards
-
-    Pack updatePackStatus(Integer packId, String status);
 
     Optional<Pack> getPackById(Integer id);
 
     List<Pack> getAllPacks();
 
-    List<Pack> getPacksByStatus(String status);
+    List<Pack> getPacksByStatus(PackStatus status);
 
-    List<Pack> getPacksByProductAndStatus(Integer productId, String status);
+    List<Pack> getPacksByProductAndStatus(Integer productId, PackStatus status);
 
     void deletePack(Integer id);
+
+    Pack updatePackStatus(Integer packId, PackStatus status);
 }

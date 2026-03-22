@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.lenient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,15 +29,15 @@ import com.example.PixelMageEcomerceProject.entity.Pack;
 import com.example.PixelMageEcomerceProject.entity.PackDetail;
 import com.example.PixelMageEcomerceProject.entity.Product;
 import com.example.PixelMageEcomerceProject.enums.CardProductStatus;
-import com.example.PixelMageEcomerceProject.enums.PackStatus;
 import com.example.PixelMageEcomerceProject.enums.CardTemplateRarity;
+import com.example.PixelMageEcomerceProject.enums.PackStatus;
+import com.example.PixelMageEcomerceProject.exceptions.InsufficientCardsException;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.CardRepository;
 import com.example.PixelMageEcomerceProject.repository.PackDetailRepository;
 import com.example.PixelMageEcomerceProject.repository.PackRepository;
 import com.example.PixelMageEcomerceProject.repository.ProductRepository;
 import com.example.PixelMageEcomerceProject.service.impl.PackServiceImpl;
-import com.example.PixelMageEcomerceProject.exceptions.InsufficientCardsException;
 
 @ExtendWith(MockitoExtension.class)
 class PackServiceTest {
@@ -76,18 +76,24 @@ class PackServiceTest {
 
         List<Card> commonCards = new ArrayList<>();
         commonCards.add(new Card());
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON), eq(CardProductStatus.READY)))
-            .thenReturn(commonCards);
-        
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(commonCards);
+
         List<Card> rareCards = new ArrayList<>();
         rareCards.add(new Card());
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE), eq(CardProductStatus.READY)))
-            .thenReturn(rareCards);
-            
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(rareCards);
+
         List<Card> legendaryCards = new ArrayList<>();
         legendaryCards.add(new Card());
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY), eq(CardProductStatus.READY)))
-            .thenReturn(legendaryCards);
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(legendaryCards);
 
         Pack result = packService.createPack(requestDTO);
 
@@ -108,7 +114,7 @@ class PackServiceTest {
 
         // Pool completely empty
         lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(any(), eq(CardProductStatus.READY)))
-            .thenReturn(new ArrayList<>());
+                .thenReturn(new ArrayList<>());
 
         assertThrows(InsufficientCardsException.class, () -> packService.createPack(requestDTO));
         verify(packDetailRepository, never()).saveAll(anyList());
@@ -121,39 +127,51 @@ class PackServiceTest {
         when(productRepository.findById(1)).thenReturn(Optional.of(new Product()));
         when(packRepository.save(any(Pack.class))).thenAnswer(i -> {
             Pack p = i.getArgument(0);
-            if(p.getPackId() == null) p.setPackId(1);
+            if (p.getPackId() == null)
+                p.setPackId(1);
             return p;
         });
 
         List<Card> commonCards = new ArrayList<>();
-        Card cCommon = new Card(); cCommon.setCardId(1);
+        Card cCommon = new Card();
+        cCommon.setCardId(1);
         commonCards.add(cCommon);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON), eq(CardProductStatus.READY)))
-            .thenReturn(commonCards);
-        
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(commonCards);
+
         List<Card> rareCards = new ArrayList<>();
-        Card cRare = new Card(); cRare.setCardId(2);
+        Card cRare = new Card();
+        cRare.setCardId(2);
         rareCards.add(cRare);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE), eq(CardProductStatus.READY)))
-            .thenReturn(rareCards);
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(rareCards);
 
         List<Card> legendaryCards = new ArrayList<>();
-        Card cLeg = new Card(); cLeg.setCardId(3);
+        Card cLeg = new Card();
+        cLeg.setCardId(3);
         legendaryCards.add(cLeg);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY), eq(CardProductStatus.READY)))
-            .thenReturn(legendaryCards);
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(legendaryCards);
 
         int legendaryCount = 0;
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             Pack result = packService.createPack(requestDTO);
             List<PackDetail> details = result.getPackDetails();
-            if (details.get(4).getCard() != null && details.get(4).getCard().getCardId() != null && details.get(4).getCard().getCardId() == 3) {
+            if (details.get(4).getCard() != null && details.get(4).getCard().getCardId() != null
+                    && details.get(4).getCard().getCardId() == 3) {
                 legendaryCount++;
             }
         }
-        
+
         System.out.println("Slot 5 Legendary count: " + legendaryCount);
-        assertTrue(legendaryCount >= 10 && legendaryCount <= 30, "Legendary count " + legendaryCount + " not in 10-30 tolerance");
+        assertTrue(legendaryCount >= 10 && legendaryCount <= 30,
+                "Legendary count " + legendaryCount + " not in 10-30 tolerance");
     }
 
     @Test
@@ -163,37 +181,48 @@ class PackServiceTest {
         when(productRepository.findById(1)).thenReturn(Optional.of(new Product()));
         when(packRepository.save(any(Pack.class))).thenAnswer(i -> {
             Pack p = i.getArgument(0);
-            if(p.getPackId() == null) p.setPackId(1);
+            if (p.getPackId() == null)
+                p.setPackId(1);
             return p;
         });
 
         List<Card> commonCards = new ArrayList<>();
-        Card cCommon = new Card(); cCommon.setCardId(1);
+        Card cCommon = new Card();
+        cCommon.setCardId(1);
         commonCards.add(cCommon);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON), eq(CardProductStatus.READY)))
-            .thenReturn(commonCards);
-        
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.COMMON),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(commonCards);
+
         List<Card> rareCards = new ArrayList<>();
-        Card cRare = new Card(); cRare.setCardId(2);
+        Card cRare = new Card();
+        cRare.setCardId(2);
         rareCards.add(cRare);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE), eq(CardProductStatus.READY)))
-            .thenReturn(rareCards);
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.RARE),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(rareCards);
 
         List<Card> legendaryCards = new ArrayList<>();
-        Card cLeg = new Card(); cLeg.setCardId(3);
+        Card cLeg = new Card();
+        cLeg.setCardId(3);
         legendaryCards.add(cLeg);
-        lenient().when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY), eq(CardProductStatus.READY)))
-            .thenReturn(legendaryCards);
+        lenient()
+                .when(cardRepository.findByCardTemplate_RarityAndStatus(eq(CardTemplateRarity.LEGENDARY),
+                        eq(CardProductStatus.READY)))
+                .thenReturn(legendaryCards);
 
         int rareCount = 0;
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             Pack result = packService.createPack(requestDTO);
             List<PackDetail> details = result.getPackDetails();
-            if (details.get(3).getCard() != null && details.get(3).getCard().getCardId() != null && details.get(3).getCard().getCardId() == 2) {
+            if (details.get(3).getCard() != null && details.get(3).getCard().getCardId() != null
+                    && details.get(3).getCard().getCardId() == 2) {
                 rareCount++;
             }
         }
-        
+
         System.out.println("Slot 4 Rare count: " + rareCount);
         assertTrue(rareCount >= 20 && rareCount <= 40, "Rare count " + rareCount + " not in 20-40 tolerance");
     }
@@ -215,7 +244,7 @@ class PackServiceTest {
         when(packRepository.findById(1)).thenReturn(Optional.of(mockPack));
         when(packRepository.save(any())).thenReturn(mockPack);
 
-        Pack result = packService.updatePackStatus(1, "RESERVED");
+        Pack result = packService.updatePackStatus(1, PackStatus.RESERVED);
 
         assertThat(result.getStatus()).isEqualTo(PackStatus.RESERVED);
         verify(packRepository, times(1)).save(mockPack);
@@ -224,6 +253,6 @@ class PackServiceTest {
     @Test
     void updatePackStatus_packNotFound_throwsException() {
         when(packRepository.findById(99)).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class, () -> packService.updatePackStatus(99, "RESERVED"));
+        assertThrows(RuntimeException.class, () -> packService.updatePackStatus(99, PackStatus.RESERVED));
     }
 }

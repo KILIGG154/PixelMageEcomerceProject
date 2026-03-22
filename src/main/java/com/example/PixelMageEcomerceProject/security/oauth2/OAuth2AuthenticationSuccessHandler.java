@@ -59,7 +59,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // Google chưa verify email thì không cho vào
             if (!Boolean.TRUE.equals(emailVerified)) {
                 log.warn("Google account with unverified email attempted login: {}", email);
-                String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/error")
+                String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/error")
                         .queryParam("error", "email_not_verified")
                         .queryParam("message", "Email Google chưa được xác thực")
                         .build().toUriString();
@@ -70,16 +70,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             log.info("Processing OAuth2 authentication for user: {}", email);
             Account account = processOAuth2Account(email, name, googleId, avatarUrl);
 
-            String accessToken = jwtTokenProvider.generateToken(
-                    org.springframework.security.core.userdetails.User.builder()
-                            .username(account.getEmail())
-                            .password("")
-                            .authorities(account.getAuthorities())
-                            .build());
+            String accessToken = jwtTokenProvider.generateToken(account);
             String refreshToken = tokenService.generateRefreshToken(account.getEmail());
 
             // Fragment thay vì query param — token không lộ trên server log
-            String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/success")
+            String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/success")
                     .fragment("accessToken=" + accessToken
                             + "&refreshToken=" + refreshToken
                             + "&email=" + URLEncoder.encode(account.getEmail(), StandardCharsets.UTF_8.toString())
@@ -91,7 +86,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         } catch (Exception e) {
             log.error("Error processing OAuth2 authentication", e);
-            String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/error")
+            String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/error")
                     .queryParam("error", "authentication_failed")
                     .queryParam("message", "Đăng nhập Google thất bại, vui lòng thử lại")
                     .build().toUriString();

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.PixelMageEcomerceProject.dto.request.PackRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.Pack;
+import com.example.PixelMageEcomerceProject.enums.PackStatus;
 import com.example.PixelMageEcomerceProject.service.interfaces.PackService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,7 +46,8 @@ public class PackController {
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Update pack status", description = "Update the status (e.g., STOCKED, RESERVED, SOLD)")
-    public ResponseEntity<ResponseBase<Pack>> updatePackStatus(@PathVariable Integer id, @RequestParam String status) {
+    public ResponseEntity<ResponseBase<Pack>> updatePackStatus(@PathVariable Integer id,
+            @RequestParam PackStatus status) {
         try {
             Pack pack = packService.updatePackStatus(id, status);
             return ResponseBase.ok(pack, "Pack status updated");
@@ -57,7 +59,7 @@ public class PackController {
     @GetMapping("/available")
     @Operation(summary = "Get available packs", description = "Retrieve packs that are STOCKED")
     public ResponseEntity<ResponseBase<List<Pack>>> getAvailablePacks() {
-        List<Pack> packs = packService.getPacksByStatus("STOCKED");
+        List<Pack> packs = packService.getPacksByStatus(PackStatus.STOCKED);
         return ResponseBase.ok(packs, "Available packs retrieved");
     }
 

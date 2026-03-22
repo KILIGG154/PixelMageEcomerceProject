@@ -6,6 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.example.PixelMageEcomerceProject.entity.Account;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -35,6 +36,12 @@ public class JwtTokenProvider {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        
+        // Add userId to claims if userDetails is Account
+        if (userDetails instanceof Account) {
+            claims.put("userId", ((Account) userDetails).getCustomerId());
+        }
+
         // Add roles to claims
         claims.put("roles", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
