@@ -219,9 +219,19 @@ public class TarotReadingServiceImpl implements TarotReadingService {
             savedCards.add(savedCard);
 
             Map<String, Object> cardMap = new HashMap<>();
-            cardMap.put("cardName", chosenCard.getName());
-            cardMap.put("position", savedCard.getPositionIndex());
+            cardMap.put("readingCardId", savedCard.getReadingCardId());
+            cardMap.put("positionIndex", savedCard.getPositionIndex());
+            cardMap.put("positionName", savedCard.getPositionName() != null ? savedCard.getPositionName() : "Vị trí " + savedCard.getPositionIndex());
             cardMap.put("isReversed", isReversed);
+
+            Map<String, Object> templateMap = new HashMap<>();
+            templateMap.put("cardTemplateId", chosenCard.getCardTemplateId());
+            templateMap.put("name", chosenCard.getName());
+            templateMap.put("imageUrl", chosenCard.getImagePath() != null ? chosenCard.getImagePath() : chosenCard.getDesignPath());
+            templateMap.put("rarity", chosenCard.getRarity() != null ? chosenCard.getRarity().name() : "COMMON");
+            
+            cardMap.put("cardTemplate", templateMap);
+
             drawnCardsOutput.add(cardMap);
         }
 
