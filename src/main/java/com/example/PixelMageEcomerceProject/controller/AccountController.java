@@ -3,6 +3,7 @@ package com.example.PixelMageEcomerceProject.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,18 +17,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
-import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.ChangePasswordRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.ForgotPasswordRequestDTO;
-import com.example.PixelMageEcomerceProject.dto.request.ResetPasswordRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.LoginRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.ResetPasswordRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.enums.AuthProvider;
 import com.example.PixelMageEcomerceProject.security.jwt.JwtTokenProvider;
 import com.example.PixelMageEcomerceProject.security.service.AuthenticationService;
 import com.example.PixelMageEcomerceProject.service.interfaces.AccountService;
+import com.example.PixelMageEcomerceProject.service.impl.CheckoutTokenServiceImpl;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,6 +51,10 @@ public class AccountController {
         private final AccountService accountService;
         private final AuthenticationService authenticationService;
         private final JwtTokenProvider jwtTokenProvider;
+        private final CheckoutTokenServiceImpl checkoutTokenService;
+
+        @Value("${app.backend.url}")
+        private String backendUrl;
 
         // =========================================================
         // Auth — public endpoints
@@ -155,10 +161,37 @@ public class AccountController {
         @Operation(summary = "Đăng nhập Google", description = "Redirect sang Google OAuth2. Sau khi xác thực xong, " +
                         "backend redirect FE đến /auth/success#accessToken=...&refreshToken=...")
         @ApiResponse(responseCode = "302", description = "Redirect sang Google OAuth2 authorization page")
-        public ResponseEntity<Object> initiateGoogleLogin() {
+        public ResponseEntity<Object> initiateGoogleLogin(
+                        @Parameter(description = "URL quay lại sau khi login thành công (cho phép test local)") @RequestParam(required = false) String redirect_uri) {
+                // QUAN TRỌNG: Phải dùng absolute URL (bao gồm domain Ngrok) để browser
+                // điều hướng đến đúng domain. Nếu dùng relative URL (/oauth2/...),
+                // browser sẽ resolve về vercel.app domain và cookie sẽ bị lưu sai domain.
+                String absoluteUrl = backendUrl.replaceAll("/+$", "") + "/oauth2/authorization/google";
+                if (redirect_uri != null && !redirect_uri.isEmpty()) {
+                        absoluteUrl += "?redirect_uri=" + redirect_uri;
+                }
+                log.info("Redirecting to Google OAuth2: {}", absoluteUrl);
                 return ResponseEntity.status(HttpStatus.FOUND)
-                                .header("Location", "/oauth2/authorization/google")
+                                .header("Location", absoluteUrl)
                                 .build();
+        }
+
+        @PostMapping("/auth/google/verify")
+        @Operation(summary = "Xác thực Google Token từ Mobile", description = "FE Mobile truyền idToken lên để xác thực qua GoogleIdTokenVerifier. Trả về JWT Token như luồng login thông thường.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Đăng nhập thành công, trả về accessToken + refreshToken"),
+                        @ApiResponse(responseCode = "401", description = "Token không hợp lệ")
+        })
+        public ResponseEntity<ResponseBase<Map<String, Object>>> verifyGoogleTokenForMobile(@RequestBody Map<String, String> payload) {
+                try {
+                        String idToken = payload.get("idToken");
+                        if (idToken == null || idToken.isBlank()) {
+                                return ResponseBase.error(HttpStatus.BAD_REQUEST, "Missing idToken");
+                        }
+                        return ResponseBase.ok(accountService.verifyGoogleMobileToken(idToken), "Xác thực Google token thành công.");
+                } catch (RuntimeException e) {
+                        return ResponseBase.error(HttpStatus.UNAUTHORIZED, e.getMessage());
+                }
         }
 
         @GetMapping("/auth/provider/{email}")
@@ -301,5 +334,62 @@ public class AccountController {
         @Operation(summary = "Kiểm tra email đã tồn tại chưa", description = "FE dùng để validate realtime khi user điền form đăng ký.")
         public ResponseEntity<ResponseBase<Boolean>> checkEmailExists(@PathVariable String email) {
                 return ResponseBase.ok(accountService.existsByEmail(email), "Email check completed");
+        }
+
+        // =========================================================
+        // Checkout Token — Mobile-to-Web payment handoff
+        // =========================================================
+
+        @PostMapping("/auth/checkout-token")
+        @Operation(
+                summary = "Phát hành Checkout Token (Mobile → Web)",
+                description = "Nhận JWT hợp lệ qua Authorization header, trả về checkout token 1 lần dùng có TTL 5 phút. " +
+                        "Token này được nhúng vào URL /checkout/{packId}?ct=... thay vì JWT gốc để đảm bảo an toàn.")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "Trả về checkoutToken"),
+                @ApiResponse(responseCode = "401", description = "JWT không hợp lệ")
+        })
+        public ResponseEntity<ResponseBase<Map<String, String>>> issueCheckoutToken(
+                        @RequestHeader("Authorization") String authHeader) {
+                try {
+                        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                                return ResponseBase.error(HttpStatus.UNAUTHORIZED, "Authorization header không hợp lệ");
+                        }
+                        String jwt = authHeader.substring(7);
+                        String email = jwtTokenProvider.extractUsername(jwt);
+                        if (email == null || email.isBlank()) {
+                                return ResponseBase.error(HttpStatus.UNAUTHORIZED, "Token không hợp lệ");
+                        }
+                        String checkoutToken = checkoutTokenService.issue(email);
+                        return ResponseBase.ok(Map.of("checkoutToken", checkoutToken), "Checkout token đã được phát hành");
+                } catch (Exception e) {
+                        return ResponseBase.error(HttpStatus.UNAUTHORIZED, "Không thể xác thực JWT: " + e.getMessage());
+                }
+        }
+
+        @GetMapping("/auth/verify-checkout-token")
+        @Operation(
+                summary = "Xác minh và tiêu thụ Checkout Token (Web App dùng)",
+                description = "Web App gọi endpoint này với ct=<checkoutToken> để lấy thông tin user rồi dùng cho phiên thanh toán. Token bị hủy ngay sau khi dùng (one-use).")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "Token hợp lệ — trả về email và userId"),
+                @ApiResponse(responseCode = "400", description = "Token không hợp lệ hoặc đã hết hạn")
+        })
+        public ResponseEntity<ResponseBase<Map<String, Object>>> verifyCheckoutToken(@RequestParam String ct) {
+                try {
+                        String email = checkoutTokenService.verifyAndConsume(ct);
+                        Account account = accountService.getAccountByEmail(email)
+                                        .orElseThrow(() -> new RuntimeException("Không tìm thấy account"));
+                        Map<String, Object> payload = new java.util.HashMap<>();
+                        payload.put("email", email);
+                        payload.put("userId", account.getCustomerId());
+                        payload.put("roles", account.getAuthorities().stream()
+                                        .map(a -> a.getAuthority()).toList());
+                        return ResponseBase.ok(payload, "Checkout token hợp lệ");
+                } catch (IllegalArgumentException e) {
+                        return ResponseBase.error(HttpStatus.BAD_REQUEST, e.getMessage());
+                } catch (Exception e) {
+                        return ResponseBase.error(HttpStatus.BAD_REQUEST, "Xác minh thất bại: " + e.getMessage());
+                }
         }
 }

@@ -8,6 +8,7 @@ import com.example.PixelMageEcomerceProject.service.model.WebhookResult;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -21,14 +22,29 @@ public class SEPayGatewayimpl implements PaymentGatewayStrategy {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
+    @Value("${sepay.bank-account:0159647283}")
+    private String bankAccount;
+
+    @Value("${sepay.bank-code:ACMEBank}")
+    private String bankCode;
 
     @Override
     public InitPaymentResult initPayment(PaymentStrategyRequest request) {
         log.info("[SEPay] initPayment for order {}", request.getOrderId());
-        // For SEPay, we don't return a specific URL. The FE generates vietQR directly,
-        // or BE can return the VietQR string/URL.
+
+        // VietQR URL Format: https://img.vietqr.io/image/<BANK>-<ACCOUNT>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>&accountName=<NAME>
+        // Templating: 'qr_only' is common for simple display
+        String description = "PIXELMAGE_ORD_" + request.getOrderId();
+        String vietQrUrl = String.format(
+            "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s&addInfo=%s",
+            bankCode,
+            bankAccount,
+            request.getAmount().toBigInteger(),
+            description
+        );
+
         return InitPaymentResult.builder()
-                .paymentUrl("sepay_qr_stand_in_url") // Normally generate VietQR url here if needed
+                .paymentUrl(vietQrUrl)
                 .isRedirect(false)
                 .gatewayTransactionId("SEPAY_" + request.getOrderId() + "_" + System.currentTimeMillis())
                 .build();

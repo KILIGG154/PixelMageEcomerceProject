@@ -45,4 +45,7 @@ public interface AccountService {
     Map<String, Object> refreshAccessToken(String refreshToken);
 
     void logout(String accessToken, String refreshToken, long tokenRemainingMillis);
+
+    // Mobile OAuth2
+    Map<String, Object> verifyGoogleMobileToken(String idTokenString);
 }

@@ -34,6 +34,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
                 .queryParam("message", "Đăng nhập Google thất bại, vui lòng thử lại")
                 // .queryParam("message", exception.getMessage())
                 .build()
+                .encode()
                 .toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, errorUrl);

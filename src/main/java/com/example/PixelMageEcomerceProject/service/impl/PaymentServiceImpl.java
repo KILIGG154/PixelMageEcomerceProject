@@ -16,11 +16,9 @@ import com.example.PixelMageEcomerceProject.enums.PaymentGateway;
 import com.example.PixelMageEcomerceProject.enums.PaymentStatus;
 import com.example.PixelMageEcomerceProject.exceptions.PaymentNotFoundException;
 import com.example.PixelMageEcomerceProject.repository.OrderRepository;
-import com.example.PixelMageEcomerceProject.repository.PackRepository;
 import com.example.PixelMageEcomerceProject.repository.PaymentRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.PaymentGatewayStrategy;
 import com.example.PixelMageEcomerceProject.service.interfaces.PaymentService;
-import com.example.PixelMageEcomerceProject.service.interfaces.WebSocketNotificationService;
 import com.example.PixelMageEcomerceProject.service.model.InitPaymentResult;
 import com.example.PixelMageEcomerceProject.service.model.PaymentStrategyRequest;
 
@@ -34,8 +32,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
-    private final PackRepository packRepository;
-    private final WebSocketNotificationService wsNotificationService;
     @Qualifier("sepay")
     private final PaymentGatewayStrategy activeGateway;
 

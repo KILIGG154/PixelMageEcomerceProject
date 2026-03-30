@@ -5,11 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
-import com.example.PixelMageEcomerceProject.exceptions.PackReservationException;
 import com.stripe.exception.ApiConnectionException;
 import com.stripe.exception.ApiException;
 import com.stripe.exception.AuthenticationException;
@@ -166,6 +166,12 @@ public class GlobalExceptionHandler {
                 log.error("Runtime error: {}", ex.getMessage(), ex);
                 return ResponseBase.error(HttpStatus.INTERNAL_SERVER_ERROR,
                                 "An unexpected error occurred: " + ex.getMessage());
+        }
+
+        @ExceptionHandler(NoResourceFoundException.class)
+        public ResponseEntity<ResponseBase<Void>> handleNoResourceFound(NoResourceFoundException ex) {
+                // Trả về 404 thay vì 500 cho các yêu cầu resource không tồn tại (như favicon.ico)
+                return ResponseBase.error(HttpStatus.NOT_FOUND, "Resource không tồn tại: " + ex.getResourcePath());
         }
 
         @ExceptionHandler(Exception.class)

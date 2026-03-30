@@ -3,7 +3,6 @@ package com.example.PixelMageEcomerceProject.service;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.Order;
 import com.example.PixelMageEcomerceProject.entity.Payment;
-import com.example.PixelMageEcomerceProject.enums.PaymentGateway;
 import com.example.PixelMageEcomerceProject.enums.PaymentStatus;
 import com.example.PixelMageEcomerceProject.repository.OrderRepository;
 import com.example.PixelMageEcomerceProject.repository.PackRepository;
@@ -60,7 +59,7 @@ class PaymentServiceImplTest {
     void initiatePayment_success_delegatesToStrategy() {
         // GIVEN
         when(orderRepository.findById(1)).thenReturn(Optional.of(testOrder));
-        
+
         InitPaymentResult mockResult = InitPaymentResult.builder()
                 .gatewayTransactionId("TXN_123")
                 .paymentUrl("http://pay.me")
@@ -80,10 +79,10 @@ class PaymentServiceImplTest {
     void pollStatus_delegatesToStrategy() {
         // GIVEN
         when(activeGateway.pollStatus("TXN_123")).thenReturn(PaymentStatus.SUCCEEDED);
-        
+
         // WHEN
         PaymentStatus status = paymentService.pollPaymentStatus("TXN_123");
-        
+
         // THEN
         assertThat(status).isEqualTo(PaymentStatus.SUCCEEDED);
         verify(activeGateway).pollStatus("TXN_123");
