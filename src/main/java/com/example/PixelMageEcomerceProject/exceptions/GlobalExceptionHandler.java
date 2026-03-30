@@ -5,6 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.Map;
 
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.stripe.exception.ApiConnectionException;
@@ -25,12 +28,70 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler {
 
+        // ── TASK-01 handlers ────────────────────────────────────────────────────
+
+        @ExceptionHandler(ActiveSessionExistsException.class)
+        public ResponseEntity<ResponseBase<Map<String, Object>>> handleActiveSessionExists(
+                        ActiveSessionExistsException ex) {
+                log.warn("Active session exists: sessionId={}", ex.getActiveSessionId());
+                Map<String, Object> body = new java.util.HashMap<>();
+                body.put("message", ex.getMessage());
+                body.put("activeSessionId", ex.getActiveSessionId());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body(new ResponseBase<>(HttpStatus.CONFLICT.value(), ex.getMessage(), body));
+        }
+
+        // ── TASK-06 handlers ───────────────────────────────────────────────────
+
+        @ExceptionHandler(PackReservationException.class)
+        public ResponseEntity<ResponseBase<Void>> handlePackReservation(PackReservationException ex) {
+                log.warn("[LOCK] Pack reservation conflict: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.CONFLICT, ex.getMessage());
+        }
+
+        // ── End TASK-06 handlers ─────────────────────────────────────────────────
+
+        @ExceptionHandler(RedisUnavailableException.class)
+        public ResponseEntity<ResponseBase<Void>> handleRedisUnavailable(RedisUnavailableException ex) {
+                log.error("Redis unavailable: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        }
+
+        @ExceptionHandler(SessionExpiredException.class)
+        public ResponseEntity<ResponseBase<Void>> handleSessionExpired(SessionExpiredException ex) {
+                log.warn("EXPLORE session expired: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.GONE, ex.getMessage());
+        }
+
+        // ── End TASK-01 handlers ─────────────────────────────────────────────────
+
+        // ── TASK-D04 handlers ───────────────────────────────────────────────────
+
+        @ExceptionHandler(StoryNotUnlockedException.class)
+        public ResponseEntity<ResponseBase<Void>> handleStoryNotUnlocked(StoryNotUnlockedException ex) {
+                log.warn("Story access denied: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.FORBIDDEN, ex.getMessage());
+        }
+
+        // ── End TASK-D04 handlers ─────────────────────────────────────────
+
+        // ── TASK-05 handlers ─────────────────────────────────────────
+
+        @ExceptionHandler(TokenExpiredException.class)
+        public ResponseEntity<ResponseBase<Void>> handleTokenExpired(TokenExpiredException ex) {
+                log.warn("Unlink verification token expired: {}", ex.getMessage());
+                return ResponseBase.error(HttpStatus.GONE, ex.getMessage());
+        }
+
+        // ── End TASK-05 handlers ────────────────────────────────────────────────
+
         @ExceptionHandler(PaymentNotFoundException.class)
         public ResponseEntity<ResponseBase<Void>> handlePaymentNotFoundException(PaymentNotFoundException ex,
                         WebRequest request) {
                 log.error("Payment not found: {}", ex.getMessage());
                 return ResponseBase.error(HttpStatus.NOT_FOUND, ex.getMessage());
         }
+
 
         @ExceptionHandler(PaymentProcessingException.class)
         public ResponseEntity<ResponseBase<Void>> handlePaymentProcessingException(PaymentProcessingException ex,
@@ -105,6 +166,12 @@ public class GlobalExceptionHandler {
                 log.error("Runtime error: {}", ex.getMessage(), ex);
                 return ResponseBase.error(HttpStatus.INTERNAL_SERVER_ERROR,
                                 "An unexpected error occurred: " + ex.getMessage());
+        }
+
+        @ExceptionHandler(NoResourceFoundException.class)
+        public ResponseEntity<ResponseBase<Void>> handleNoResourceFound(NoResourceFoundException ex) {
+                // Trả về 404 thay vì 500 cho các yêu cầu resource không tồn tại (như favicon.ico)
+                return ResponseBase.error(HttpStatus.NOT_FOUND, "Resource không tồn tại: " + ex.getResourcePath());
         }
 
         @ExceptionHandler(Exception.class)

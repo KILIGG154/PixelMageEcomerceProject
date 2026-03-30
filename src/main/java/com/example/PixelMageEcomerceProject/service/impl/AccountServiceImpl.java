@@ -9,6 +9,9 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 
 import com.example.PixelMageEcomerceProject.dto.request.RegisterRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.UpdateProfileRequestDTO;
@@ -37,6 +40,12 @@ public class AccountServiceImpl implements AccountService {
     private final AuthenticationService authenticationService;
     private final TokenService tokenService;
     private final EmailService emailService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
+
+    @Value("${google.mobile-client-id}")
+    private String googleMobileClientId;
 
     @Override
     @Transactional
@@ -265,5 +274,78 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return accountRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> verifyGoogleMobileToken(String idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new com.google.api.client.http.javanet.NetHttpTransport(),
+                    new com.google.api.client.json.gson.GsonFactory())
+                    .setAudience(java.util.Arrays.asList(googleClientId, googleMobileClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+                String googleId = payload.getSubject();
+                String avatarUrl = (String) payload.get("picture");
+
+                // Tìm hoặc tạo account mới giống như luồng web
+                Account account = accountRepository.findByEmailIgnoreActive(email).orElse(null);
+                
+                if (account != null) {
+                    boolean changed = false;
+                    if (account.getAuthProvider() == com.example.PixelMageEcomerceProject.enums.AuthProvider.LOCAL && Boolean.TRUE.equals(account.getIsActive())) {
+                        account.setAuthProvider(com.example.PixelMageEcomerceProject.enums.AuthProvider.GOOGLE);
+                        account.setProviderId(googleId);
+                        emailService.sendGoogleLinkedNotification(account.getEmail(), account.getName());
+                        changed = true;
+                        // log.info("Linked Google to existing LOCAL account from mobile verifier: {}", email);
+                    } else if (!googleId.equals(account.getProviderId())) {
+                        account.setProviderId(googleId);
+                        changed = true;
+                    }
+
+                    if (!Boolean.TRUE.equals(account.getEmailVerified())) {
+                        account.setEmailVerified(true);
+                        changed = true;
+                    }
+
+                    if (account.getAvatarUrl() == null && avatarUrl != null) {
+                        account.setAvatarUrl(avatarUrl);
+                        changed = true;
+                    }
+                    if (changed) account = accountRepository.save(account);
+                } else {
+                    Role userRole = roleRepository.findByRoleName("USER")
+                            .orElseThrow(() -> new RuntimeException("USER role not found"));
+                    account = new Account();
+                    account.setEmail(email);
+                    account.setName(name);
+                    account.setAuthProvider(com.example.PixelMageEcomerceProject.enums.AuthProvider.GOOGLE);
+                    account.setProviderId(googleId);
+                    account.setAvatarUrl(avatarUrl);
+                    account.setRole(userRole);
+                    account.setEmailVerified(true);
+                    account = accountRepository.save(account);
+                }
+
+                String accessToken = authenticationService.generateToken(account);
+                String refreshToken = tokenService.generateRefreshToken(account.getEmail());
+
+                return Map.of(
+                        "accessToken", accessToken,
+                        "refreshToken", refreshToken,
+                        "account", account);
+            } else {
+                throw new RuntimeException("Invalid ID token.");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi xác thực Google Token: " + e.getMessage(), e);
+        }
     }
 }

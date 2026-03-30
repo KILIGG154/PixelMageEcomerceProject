@@ -38,6 +38,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
     private final EmailService emailService;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -59,10 +60,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // Google chưa verify email thì không cho vào
             if (!Boolean.TRUE.equals(emailVerified)) {
                 log.warn("Google account with unverified email attempted login: {}", email);
-                String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/error")
+                String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/error")
                         .queryParam("error", "email_not_verified")
                         .queryParam("message", "Email Google chưa được xác thực")
-                        .build().toUriString();
+                        .build()
+                        .encode()
+                        .toUriString();
                 getRedirectStrategy().sendRedirect(request, response, errorUrl);
                 return;
             }
@@ -70,31 +73,34 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             log.info("Processing OAuth2 authentication for user: {}", email);
             Account account = processOAuth2Account(email, name, googleId, avatarUrl);
 
-            String accessToken = jwtTokenProvider.generateToken(
-                    org.springframework.security.core.userdetails.User.builder()
-                            .username(account.getEmail())
-                            .password("")
-                            .authorities(account.getAuthorities())
-                            .build());
+            String accessToken = jwtTokenProvider.generateToken(account);
             String refreshToken = tokenService.generateRefreshToken(account.getEmail());
 
-            // Fragment thay vì query param — token không lộ trên server log
-            String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/success")
+            // Ưu tiên dùng redirect_uri từ cookie (nếu FE truyền lên lúc bắt đầu login)
+            String targetUrl = cookieAuthorizationRequestRepository.getRedirectUriFromCookie(request)
+                    .orElse(frontendUrl + "/success");
+
+            String redirectUrl = UriComponentsBuilder.fromUriString(targetUrl)
                     .fragment("accessToken=" + accessToken
                             + "&refreshToken=" + refreshToken
                             + "&email=" + URLEncoder.encode(account.getEmail(), StandardCharsets.UTF_8.toString())
                             + "&name=" + URLEncoder.encode(account.getName(), StandardCharsets.UTF_8.toString()))
                     .build().toUriString();
 
-            log.info("OAuth2 login success, redirecting: {}", email);
+            // Clear cookies an toàn trước khi đi
+            cookieAuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
+
+            log.info("OAuth2 login success, redirecting to: {}", targetUrl);
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         } catch (Exception e) {
             log.error("Error processing OAuth2 authentication", e);
-            String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/error")
+            String errorUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/error")
                     .queryParam("error", "authentication_failed")
                     .queryParam("message", "Đăng nhập Google thất bại, vui lòng thử lại")
-                    .build().toUriString();
+                    .build()
+                    .encode()
+                    .toUriString();
             getRedirectStrategy().sendRedirect(request, response, errorUrl);
         }
     }
