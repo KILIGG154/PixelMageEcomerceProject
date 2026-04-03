@@ -2,6 +2,9 @@ package com.example.PixelMageEcomerceProject.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -181,10 +184,38 @@ public class GlobalExceptionHandler {
                 return ResponseBase.error(HttpStatus.NOT_FOUND, "Resource không tồn tại: " + ex.getResourcePath());
         }
 
-        @ExceptionHandler(Exception.class)
-        public ResponseEntity<ResponseBase<Void>> handleGeneralException(Exception ex, WebRequest request) {
-                log.error("Unexpected error: {}", ex.getMessage(), ex);
-                return ResponseBase.error(HttpStatus.INTERNAL_SERVER_ERROR,
-                                "An unexpected error occurred: " + ex.getMessage());
-        }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ResponseBase<Map<String, String>>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new java.util.HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        log.warn("[VALIDATION] Request failed with errors: {}", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ResponseBase<>(HttpStatus.BAD_REQUEST.value(), "Validation failed", errors));
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ResponseBase<Map<String, String>>> handleBindException(
+            BindException ex) {
+        Map<String, String> errors = new java.util.HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        log.warn("[BINDING] Request failed with errors: {}", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ResponseBase<>(HttpStatus.BAD_REQUEST.value(), "Request binding failed", errors));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ResponseBase<Void>> handleGeneralException(Exception ex, WebRequest request) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        return ResponseBase.error(HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred: " + ex.getMessage());
+    }
 }
