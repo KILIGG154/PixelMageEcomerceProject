@@ -34,7 +34,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+
 @Entity
+@NamedEntityGraph(
+    name = "CardTemplate.withDetails",
+    attributeNodes = {
+        @NamedAttributeNode("divineHelper"),
+        @NamedAttributeNode("cardFramework")
+    }
+)
 @Table(name = "card_templates")
 @SQLRestriction("is_active = true")
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })

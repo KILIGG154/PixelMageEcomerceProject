@@ -25,7 +25,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+
 @Entity
+@NamedEntityGraph(
+    name = "Pack.withDetails",
+    attributeNodes = {
+        @NamedAttributeNode("product"),
+        @NamedAttributeNode("packDetails")
+    }
+)
 @Table(name = "PACKS")
 @Data
 @NoArgsConstructor
