@@ -2,8 +2,10 @@ package com.example.PixelMageEcomerceProject.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.validation.BindException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -210,6 +212,20 @@ public class GlobalExceptionHandler {
         log.warn("[BINDING] Request failed with errors: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ResponseBase<>(HttpStatus.BAD_REQUEST.value(), "Request binding failed", errors));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ResponseBase<Void>> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        log.warn("[MEDIA-TYPE] Unsupported media type: {}", ex.getMessage());
+        return ResponseBase.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, 
+            "Định dạng yêu cầu không đúng (Content-Type). Server yêu cầu JSON hoặc Multipart.");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ResponseBase<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("[UPLOAD] File size limit exceeded: {}", ex.getMessage());
+        return ResponseBase.error(HttpStatus.PAYLOAD_TOO_LARGE, 
+            "File quá lớn! Giới hạn tối đa là 10MB (cấu hình BE đã được update).");
     }
 
     @ExceptionHandler(Exception.class)
