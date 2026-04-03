@@ -30,7 +30,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+
 @Entity
+@NamedEntityGraph(
+    name = "Order.withDetails",
+    attributeNodes = {
+        @NamedAttributeNode("account"),
+        @NamedAttributeNode("orderItems")
+    }
+)
 @Table(name = "ORDERS")
 @SQLRestriction("is_active = true")
 @Data
