@@ -99,6 +99,7 @@ public class CardContentServiceImpl implements CardContentService {
         if (!cardContentRepository.existsById(id)) {
             throw new RuntimeException("CardContent not found with id: " + id);
         }
+        // Hard delete (requested): CardContent is independent enough to remove.
         cardContentRepository.deleteById(id);
     }
 
