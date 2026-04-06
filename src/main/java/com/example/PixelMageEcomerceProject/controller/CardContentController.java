@@ -170,7 +170,7 @@ public class CardContentController {
     @Secured("ROLE_ADMIN")
     @Operation(
         summary = "Hard delete a content block (Admin only)",
-        description = "Permanently removes the content block. Prefer toggle-active to hide instead of deleting."
+        description = "Permanently removes the content block. Use toggle-active to set INACTIVE without deleting."
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Deleted successfully"),

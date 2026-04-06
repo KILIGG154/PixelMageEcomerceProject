@@ -5,6 +5,9 @@ import org.springframework.stereotype.Repository;
 
 import com.example.PixelMageEcomerceProject.entity.CardFramework;
 
+import java.util.List;
+
 @Repository
 public interface CardFrameworkRepository extends JpaRepository<CardFramework, Integer> {
+    List<CardFramework> findByActiveTrueOrderByNameAsc();
 }
