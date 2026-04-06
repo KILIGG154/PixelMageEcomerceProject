@@ -16,6 +16,9 @@ import java.util.List;
 public interface CardTemplateRepository extends JpaRepository<CardTemplate, Integer> {
 
     @EntityGraph(value = "CardTemplate.withDetails", type = EntityGraph.EntityGraphType.LOAD)
+    Optional<CardTemplate> findById(Integer id);
+
+    @EntityGraph(value = "CardTemplate.withDetails", type = EntityGraph.EntityGraphType.LOAD)
     Page<CardTemplate> findAll(Pageable pageable);
 
     @EntityGraph(value = "CardTemplate.withDetails", type = EntityGraph.EntityGraphType.LOAD)
