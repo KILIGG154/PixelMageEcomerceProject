@@ -42,7 +42,8 @@ import jakarta.persistence.NamedEntityGraph;
     name = "CardTemplate.withDetails",
     attributeNodes = {
         @NamedAttributeNode("divineHelper"),
-        @NamedAttributeNode("cardFramework")
+        @NamedAttributeNode("cardFramework"),
+        @NamedAttributeNode("cardContents")
     }
 )
 @Table(name = "card_templates")
