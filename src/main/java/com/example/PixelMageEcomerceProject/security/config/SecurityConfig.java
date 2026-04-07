@@ -81,9 +81,10 @@ public class SecurityConfig {
                                                                 "/favicon.ico")
                                                 .permitAll()
                                                 // 2. Public GET endpoints cho Catalog & Marketplace & Card Gallery
-                                                .requestMatchers(org.springframework.http.HttpMethod.GET, 
-                                                                "/api/products", 
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/products",
                                                                 "/api/products/**",
+                                                                "/api/card-frameworks",
                                                                 "/api/card-templates",
                                                                 "/api/card-templates/**",
                                                                 "/api/card-contents/**")
