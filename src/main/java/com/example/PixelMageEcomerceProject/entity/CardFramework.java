@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -48,6 +49,9 @@ public class CardFramework {
     @OneToMany(mappedBy = "cardFramework", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("framework-cardTemplates")
     private List<CardTemplate> cardTemplates;
+
+    @Formula("(SELECT COUNT(*) FROM card_templates ct WHERE ct.framework_id = framework_id AND ct.is_active = true)")
+    private Integer totalCards;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
