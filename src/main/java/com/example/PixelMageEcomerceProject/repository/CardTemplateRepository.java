@@ -35,5 +35,5 @@ public interface CardTemplateRepository extends JpaRepository<CardTemplate, Inte
     Page<CardTemplate> findByArcanaType(ArcanaType arcanaType, Pageable pageable);
 
     @EntityGraph(value = "CardTemplate.withDetails", type = EntityGraph.EntityGraphType.LOAD)
-    Page<CardTemplate> findByCardFramework_FrameworkId(String frameworkId, Pageable pageable);
+    Page<CardTemplate> findByCardFramework_FrameworkId(Integer frameworkId, Pageable pageable);
 }

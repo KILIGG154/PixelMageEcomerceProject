@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +12,14 @@ import com.example.PixelMageEcomerceProject.dto.request.CardRequestDTO;
 import com.example.PixelMageEcomerceProject.entity.Card;
 import com.example.PixelMageEcomerceProject.entity.CardTemplate;
 import com.example.PixelMageEcomerceProject.entity.Product;
+import com.example.PixelMageEcomerceProject.enums.CardCondition;
 import com.example.PixelMageEcomerceProject.enums.CardProductStatus;
+import com.example.PixelMageEcomerceProject.mapper.CardMapper;
 import com.example.PixelMageEcomerceProject.repository.CardRepository;
 import com.example.PixelMageEcomerceProject.repository.CardTemplateRepository;
 import com.example.PixelMageEcomerceProject.repository.ProductRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.CardService;
 
-import com.example.PixelMageEcomerceProject.mapper.CardMapper;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,7 +45,7 @@ public class CardServiceImpl implements CardService {
         card.setCardTemplate(cardTemplate);
         card.setProduct(product);
         if (card.getCardCondition() == null) {
-            card.setCardCondition("NEW");
+            card.setCardCondition(CardCondition.NEW);
         }
         card.setStatus(CardProductStatus.PENDING_BIND);
 
@@ -100,7 +100,7 @@ public class CardServiceImpl implements CardService {
                 updatedCard.setProductionBatch(cardRequestDTO.getProductionBatch());
             }
             if (cardRequestDTO.getCardCondition() != null) {
-                updatedCard.setCardCondition(cardRequestDTO.getCardCondition());
+                updatedCard.setCardCondition(CardCondition.valueOf(cardRequestDTO.getCardCondition().toUpperCase()));
             }
 
             updatedCard.setCustomText(cardRequestDTO.getCustomText());

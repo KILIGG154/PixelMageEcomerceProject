@@ -122,7 +122,7 @@ public class CardTemplateController {
     @GetMapping("/by-framework/{frameworkId}")
     @Operation(summary = "Filter templates by CardFramework ID (Public, paginated)", description = "Returns all templates belonging to a specific framework. Supports ?page=0&size=12&sort=name,asc")
     public ResponseEntity<ResponseBase<Page<CardTemplateResponse.Summary>>> getByFramework(
-            @PathVariable String frameworkId, Pageable pageable) {
+            @PathVariable Integer frameworkId, Pageable pageable) {
         Page<CardTemplateResponse.Summary> page = cardTemplateService.getAllByFramework(frameworkId, pageable)
                 .map(cardTemplateMapper::toSummaryResponse);
         return ResponseBase.ok(page, "Templates filtered by framework: " + frameworkId);

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.example.PixelMageEcomerceProject.enums.CardCondition;
 import com.example.PixelMageEcomerceProject.enums.CardProductStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -74,8 +75,9 @@ public class Card {
     @Column(name = "production_batch", length = 100)
     private String productionBatch;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "card_condition", length = 20)
-    private String cardCondition = "NEW";
+    private CardCondition cardCondition = CardCondition.NEW;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_account_id", referencedColumnName = "customer_id")

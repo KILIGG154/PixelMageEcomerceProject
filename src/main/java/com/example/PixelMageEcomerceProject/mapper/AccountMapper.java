@@ -8,6 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -25,6 +26,6 @@ public interface AccountMapper {
     @Named("isGuestReadingUsedToday")
     default Boolean isGuestReadingUsedToday(Account account) {
         if (account == null || account.getGuestReadingUsedAt() == null) return false;
-        return account.getGuestReadingUsedAt().toLocalDate().isEqual(java.time.LocalDate.now());
+        return account.getGuestReadingUsedAt().toLocalDate().isEqual(LocalDate.now());
     }
 }
