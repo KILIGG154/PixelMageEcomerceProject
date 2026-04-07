@@ -30,7 +30,7 @@ public interface CardTemplateService {
 
     Page<CardTemplate> getAllByArcana(ArcanaType arcanaType, Pageable pageable);
 
-    Page<CardTemplate> getAllByFramework(String frameworkId, Pageable pageable);
+    Page<CardTemplate> getAllByFramework(Integer frameworkId, Pageable pageable);
 
     Optional<CardTemplate> getCardTemplateByName(String name);
 }

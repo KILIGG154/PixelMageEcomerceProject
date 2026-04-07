@@ -129,7 +129,7 @@ public class CardTemplateServiceImpl implements CardTemplateService {
     }
 
     @Override
-    public Page<CardTemplate> getAllByFramework(String frameworkId, Pageable pageable) {
+    public Page<CardTemplate> getAllByFramework(Integer frameworkId, Pageable pageable) {
         return cardTemplateRepository.findByCardFramework_FrameworkId(frameworkId, pageable);
     }
 

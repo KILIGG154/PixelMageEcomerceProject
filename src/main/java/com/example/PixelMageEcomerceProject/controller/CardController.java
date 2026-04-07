@@ -1,7 +1,5 @@
 package com.example.PixelMageEcomerceProject.controller;
 
-
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -17,8 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.PixelMageEcomerceProject.dto.request.CardRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.response.PhysicalCardFullResponse;
+import com.example.PixelMageEcomerceProject.dto.response.PhysicalCardPublicResponse;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
 import com.example.PixelMageEcomerceProject.entity.Card;
+import com.example.PixelMageEcomerceProject.mapper.CardMapper;
 import com.example.PixelMageEcomerceProject.service.interfaces.CardService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class CardController {
 
         private final CardService cardService;
+        private final CardMapper cardMapper;
 
         @PostMapping("/create")
         @Operation(summary = "Create a new card product (PENDING_BIND)", description = "Create a new card product without NFC bind")
@@ -78,14 +80,25 @@ public class CardController {
         }
 
         @GetMapping("/list")
-        @Operation(summary = "Get all cards (paginated)",
-                   description = "Supports pagination: ?page=0&size=20&sort=cardId,desc. FE controls page size.")
+        @Operation(summary = "Get all cards (Admin - Full details)", description = "Admin only. Returns full card details including sensitive fields. Supports pagination.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Cards retrieved successfully", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
         })
-        public ResponseEntity<ResponseBase<Page<Card>>> getAllCards(Pageable pageable) {
+        public ResponseEntity<ResponseBase<Page<PhysicalCardFullResponse>>> getAllCards(Pageable pageable) {
                 Page<Card> cards = cardService.getAllCards(pageable);
-                return ResponseBase.ok(cards, "Cards retrieved successfully");
+                Page<PhysicalCardFullResponse> responses = cards.map(cardMapper::toFullResponse);
+                return ResponseBase.ok(responses, "Cards retrieved successfully");
+        }
+
+        @GetMapping("/public/list")
+        @Operation(summary = "Get all cards (Public - Safe details)", description = "Returns public card info only. Hides NFC UID, serial numbers, and owner details. Supports pagination.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Cards retrieved successfully", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
+        })
+        public ResponseEntity<ResponseBase<Page<PhysicalCardPublicResponse>>> getPublicCards(Pageable pageable) {
+                Page<Card> cards = cardService.getAllCards(pageable);
+                Page<PhysicalCardPublicResponse> responses = cards.map(cardMapper::toPublicResponse);
+                return ResponseBase.ok(responses, "Cards retrieved successfully");
         }
 
         @GetMapping("/{id}")
