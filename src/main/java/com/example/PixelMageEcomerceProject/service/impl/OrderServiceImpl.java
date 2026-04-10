@@ -112,6 +112,17 @@ public class OrderServiceImpl implements OrderService {
                 // Use MapStruct to map DTO to Entity
                 Order order = orderMapper.toEntity(orderRequestDTO);
                 order.setAccount(account);
+                
+                // Initialize default values for missing required fields
+                if (order.getStatus() == null) {
+                    order.setStatus(OrderStatus.PENDING);
+                }
+                if (order.getPaymentStatus() == null) {
+                    order.setPaymentStatus(PaymentStatus.PENDING);
+                }
+                if (order.getOrderDate() == null) {
+                    order.setOrderDate(java.time.LocalDateTime.now());
+                }
 
                 // Apply voucher if present
                 if (orderRequestDTO.getVoucherCode() != null && !orderRequestDTO.getVoucherCode().trim().isEmpty()) {
