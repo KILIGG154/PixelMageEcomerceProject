@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.PixelMageEcomerceProject.dto.request.OrderRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.OrderResponse;
 import com.example.PixelMageEcomerceProject.dto.response.ResponseBase;
+import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.enums.OrderStatus;
+import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.service.interfaces.OrderService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderController {
 
         private final OrderService orderService;
+        private final AccountRepository accountRepository;
 
         @PostMapping
         @Operation(summary = "Create a new order", description = "Create a new order")
@@ -48,9 +51,21 @@ public class OrderController {
                         @RequestBody OrderRequestDTO orderRequestDTO,
                         Principal principal) {
                 try {
-                        // Get customerId from JWT token (Principal)
+                        // Resolve customerId from JWT principal.
+                        // principal.getName() trả về email (JWT sub = email),
+                        // nên cần lookup account để lấy numeric customerId.
                         if (principal != null) {
-                                orderRequestDTO.setCustomerId(Integer.parseInt(principal.getName()));
+                                String principalName = principal.getName();
+                                try {
+                                        // Thử parse trực tiếp nếu JWT sub là ID (legacy)
+                                        orderRequestDTO.setCustomerId(Integer.parseInt(principalName));
+                                } catch (NumberFormatException ex) {
+                                        // JWT sub là email — lookup account
+                                        Account account = accountRepository.findByEmail(principalName)
+                                                .orElseThrow(() -> new RuntimeException(
+                                                        "Account not found for email: " + principalName));
+                                        orderRequestDTO.setCustomerId(account.getCustomerId());
+                                }
                         }
                         OrderResponse createdOrder = orderService.createOrder(orderRequestDTO);
                         return ResponseBase.created(createdOrder, "Order created successfully");
