@@ -131,10 +131,11 @@ public class PaymentController {
         }
     }
 
-    @RequestMapping(value = "/webhook/{gateway}", method = { RequestMethod.GET, RequestMethod.POST })
+    @RequestMapping(value = "/webhook/{gateway}", method = { RequestMethod.GET, RequestMethod.POST }, consumes = {"application/json", "application/x-www-form-urlencoded", "multipart/form-data", "*/*"})
     @Operation(summary = "Generic Webhook", description = "Generic endpoint to receive payment notifications from various gateways")
     public ResponseEntity<Object> handleWebhook(
             @PathVariable String gateway,
+            @RequestBody(required = false) Map<String, Object> jsonPayload,
             HttpServletRequest request) {
         log.info("[WEBHOOK] Received notification from gateway: {}", gateway);
 
@@ -144,10 +145,21 @@ public class PaymentController {
         }
 
         Map<String, String> payload = new HashMap<>();
+        
+        // Handle URL parameters or Form-UrlEncoded data
         Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             String paramName = parameterNames.nextElement();
             payload.put(paramName, request.getParameter(paramName));
+        }
+
+        // Merge JSON payload if available
+        if (jsonPayload != null) {
+            jsonPayload.forEach((key, value) -> {
+                if (value != null) {
+                    payload.put(key, value.toString());
+                }
+            });
         }
 
         WebhookResult result = strategy.handleWebhook(payload);

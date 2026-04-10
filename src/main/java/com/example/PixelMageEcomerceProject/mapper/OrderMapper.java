@@ -18,11 +18,14 @@ import java.math.BigDecimal;
 @Mapper(componentModel = "spring", uses = { AccountMapper.class, ProductMapper.class, OrderItemMapper.class })
 public abstract class OrderMapper {
 
-    @Value("${sepay.bank-account}")
+    @Value("${sepay.bank-account:0703376647}")
     private String bankAccount;
 
-    @Value("${sepay.bank-code}")
+    @Value("${sepay.bank-code:MB}")
     private String bankCode;
+
+    @Value("${sepay.va-prefix:VQRQAHWQK1766}")
+    private String vaPrefix;
 
     @Mapping(target = "customer", source = "account")
     @Mapping(target = "appliedVoucher", ignore = true)
@@ -39,13 +42,13 @@ public abstract class OrderMapper {
         }
 
         if ("SEPAY".equalsIgnoreCase(order.getPaymentMethod()) && PaymentStatus.PENDING.equals(order.getPaymentStatus())) {
-            String description = "PIXELMAGE_ORD_" + order.getOrderId();
+            // VA format: vaPrefix + orderId => SEPay auto-maps transaction to this order
+            String virtualAccount = vaPrefix + order.getOrderId();
             String vietQrUrl = String.format(
-                "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s&addInfo=%s",
+                "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s",
                 bankCode,
-                bankAccount,
-                order.getTotalAmount() != null ? order.getTotalAmount().toBigInteger() : 0,
-                description
+                virtualAccount,
+                order.getTotalAmount() != null ? order.getTotalAmount().toBigInteger() : 0
             );
             response.setPaymentQrUrl(vietQrUrl);
         }

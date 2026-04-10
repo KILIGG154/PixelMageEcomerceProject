@@ -23,25 +23,26 @@ public class SEPayGatewayimpl implements PaymentGatewayStrategy {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${sepay.bank-account:0159647283}")
+    @Value("${sepay.bank-account:0703376647}")
     private String bankAccount;
 
-    @Value("${sepay.bank-code:ACMEBank}")
+    @Value("${sepay.bank-code:MB}")
     private String bankCode;
+
+    @Value("${sepay.va-prefix:VQRQAHWQK1766}")
+    private String vaPrefix;
 
     @Override
     public InitPaymentResult initPayment(PaymentStrategyRequest request) {
         log.info("[SEPay] initPayment for order {}", request.getOrderId());
 
-        // VietQR URL Format: https://img.vietqr.io/image/<BANK>-<ACCOUNT>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<DESCRIPTION>&accountName=<NAME>
-        // Templating: 'qr_only' is common for simple display
-        String description = "PIXELMAGE_ORD_" + request.getOrderId();
+        // VA format: vaPrefix + orderId => SEPay auto-maps to correct order
+        String virtualAccount = vaPrefix + request.getOrderId();
         String vietQrUrl = String.format(
-            "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s&addInfo=%s",
+            "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s",
             bankCode,
-            bankAccount,
-            request.getAmount().toBigInteger(),
-            description
+            virtualAccount,
+            request.getAmount().toBigInteger()
         );
 
         return InitPaymentResult.builder()
