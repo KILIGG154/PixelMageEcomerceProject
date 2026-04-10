@@ -1,5 +1,6 @@
 package com.example.PixelMageEcomerceProject.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -43,8 +44,14 @@ public class OrderController {
                         @ApiResponse(responseCode = "201", description = "Order created successfully", content = @Content(schema = @Schema(implementation = ResponseBase.class))),
                         @ApiResponse(responseCode = "400", description = "Bad request", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
         })
-        public ResponseEntity<ResponseBase<OrderResponse>> createOrder(@RequestBody OrderRequestDTO orderRequestDTO) {
+        public ResponseEntity<ResponseBase<OrderResponse>> createOrder(
+                        @RequestBody OrderRequestDTO orderRequestDTO,
+                        Principal principal) {
                 try {
+                        // Get customerId from JWT token (Principal)
+                        if (principal != null) {
+                                orderRequestDTO.setCustomerId(Integer.parseInt(principal.getName()));
+                        }
                         OrderResponse createdOrder = orderService.createOrder(orderRequestDTO);
                         return ResponseBase.created(createdOrder, "Order created successfully");
                 } catch (Exception e) {
@@ -71,7 +78,7 @@ public class OrderController {
         public ResponseEntity<ResponseBase<OrderResponse>> getOrderById(@PathVariable Integer id) {
                 OrderResponse order = orderService.getOrderById(id);
                 if (order != null) {
-                    return ResponseBase.ok(order, "Order found");
+                        return ResponseBase.ok(order, "Order found");
                 }
                 return ResponseBase.error(HttpStatus.NOT_FOUND, "Order not found with id: " + id);
         }
@@ -81,7 +88,8 @@ public class OrderController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Orders found", content = @Content(schema = @Schema(implementation = ResponseBase.class)))
         })
-        public ResponseEntity<ResponseBase<List<OrderResponse>>> getOrdersByCustomerId(@PathVariable Integer customerId) {
+        public ResponseEntity<ResponseBase<List<OrderResponse>>> getOrdersByCustomerId(
+                        @PathVariable Integer customerId) {
                 List<OrderResponse> orders = orderService.getOrdersByCustomerId(customerId);
                 return ResponseBase.ok(orders, "Orders retrieved successfully");
         }

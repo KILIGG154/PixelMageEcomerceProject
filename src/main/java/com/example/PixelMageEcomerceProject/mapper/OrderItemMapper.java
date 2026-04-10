@@ -1,20 +1,29 @@
 package com.example.PixelMageEcomerceProject.mapper;
 
-import com.example.PixelMageEcomerceProject.dto.response.OrderResponse;
-import com.example.PixelMageEcomerceProject.entity.OrderItem;
-import com.example.PixelMageEcomerceProject.entity.Pack;
-import com.example.PixelMageEcomerceProject.entity.Product;
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-import java.util.List;
+import com.example.PixelMageEcomerceProject.dto.request.OrderItemRequestDTO;
+import com.example.PixelMageEcomerceProject.dto.response.OrderResponse;
+import com.example.PixelMageEcomerceProject.entity.OrderItem;
+import com.example.PixelMageEcomerceProject.entity.Pack;
+import com.example.PixelMageEcomerceProject.entity.Product;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface OrderItemMapper {
 
     @Mapping(target = "pack", source = "pack")
     OrderResponse.Item toResponse(OrderItem orderItem);
+
+    @Mapping(target = "orderItemId", ignore = true)
+    @Mapping(target = "order", ignore = true) // Set in service
+    @Mapping(target = "pack", ignore = true) // Lookup and set in service
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    OrderItem toEntity(OrderItemRequestDTO dto);
 
     @Mapping(target = "packId", source = "packId")
     @Mapping(target = "status", source = "status")

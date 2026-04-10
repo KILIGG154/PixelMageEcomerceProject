@@ -7,18 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
 import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import com.example.PixelMageEcomerceProject.event.PaymentSuccessEvent;
 
+import com.example.PixelMageEcomerceProject.dto.event.NotificationEvent;
 import com.example.PixelMageEcomerceProject.dto.request.OrderItemRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.request.OrderRequestDTO;
 import com.example.PixelMageEcomerceProject.dto.response.OrderResponse;
-import com.example.PixelMageEcomerceProject.mapper.OrderMapper;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.Order;
 import com.example.PixelMageEcomerceProject.entity.OrderItem;
@@ -26,8 +25,11 @@ import com.example.PixelMageEcomerceProject.entity.Pack;
 import com.example.PixelMageEcomerceProject.enums.OrderStatus;
 import com.example.PixelMageEcomerceProject.enums.PackStatus;
 import com.example.PixelMageEcomerceProject.enums.PaymentStatus;
+import com.example.PixelMageEcomerceProject.event.PaymentSuccessEvent;
 import com.example.PixelMageEcomerceProject.exceptions.PackReservationException;
 import com.example.PixelMageEcomerceProject.exceptions.RedisUnavailableException;
+import com.example.PixelMageEcomerceProject.mapper.OrderItemMapper;
+import com.example.PixelMageEcomerceProject.mapper.OrderMapper;
 import com.example.PixelMageEcomerceProject.repository.AccountRepository;
 import com.example.PixelMageEcomerceProject.repository.OrderItemRepository;
 import com.example.PixelMageEcomerceProject.repository.OrderRepository;
@@ -37,7 +39,6 @@ import com.example.PixelMageEcomerceProject.service.interfaces.PaymentService;
 import com.example.PixelMageEcomerceProject.service.interfaces.RedisLockService;
 import com.example.PixelMageEcomerceProject.service.interfaces.VoucherService;
 import com.example.PixelMageEcomerceProject.service.interfaces.WebSocketNotificationService;
-import com.example.PixelMageEcomerceProject.dto.event.NotificationEvent;
 import com.example.PixelMageEcomerceProject.service.model.InitPaymentResult;
 
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
     private final VoucherService voucherService;
     private final PlatformTransactionManager transactionManager;
     private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
     private final WebSocketNotificationService wsNotificationService;
 
     @Override
@@ -89,12 +91,15 @@ public class OrderServiceImpl implements OrderService {
                         try {
                             locked = redisLockService.tryLock(lockKey, 30);
                         } catch (Exception e) {
-                            log.error("[ORDER][LOCK] Redis unavailable for pack {}: {}", itemDto.getPackId(), e.getMessage());
-                            throw new RedisUnavailableException("Dịch vụ đặt hàng tạm thời không khả dụng. Vui lòng thử lại sau.");
+                            log.error("[ORDER][LOCK] Redis unavailable for pack {}: {}", itemDto.getPackId(),
+                                    e.getMessage());
+                            throw new RedisUnavailableException(
+                                    "Dịch vụ đặt hàng tạm thời không khả dụng. Vui lòng thử lại sau.");
                         }
                         if (!locked) {
                             log.warn("[ORDER][LOCK] Pack {} is already locked by another request", itemDto.getPackId());
-                            throw new PackReservationException("Pack " + itemDto.getPackId() + " đang được người khác đặt. Vui lòng thử lại sau.");
+                            throw new PackReservationException(
+                                    "Pack " + itemDto.getPackId() + " đang được người khác đặt. Vui lòng thử lại sau.");
                         }
                         log.debug("[ORDER][LOCK] Lock acquired for pack {}", itemDto.getPackId());
                         acquiredLocks.add(lockKey);
@@ -104,15 +109,11 @@ public class OrderServiceImpl implements OrderService {
 
             // Execute DB operations in a transaction
             return transactionTemplate.execute(status -> {
-                Order order = new Order();
+                // Use MapStruct to map DTO to Entity
+                Order order = orderMapper.toEntity(orderRequestDTO);
                 order.setAccount(account);
-                order.setOrderDate(orderRequestDTO.getOrderDate());
-                order.setStatus(orderRequestDTO.getStatus());
-                order.setShippingAddress(orderRequestDTO.getShippingAddress());
-                order.setPaymentMethod(orderRequestDTO.getPaymentMethod());
-                order.setPaymentStatus(orderRequestDTO.getPaymentStatus());
-                order.setNotes(orderRequestDTO.getNotes());
 
+                // Apply voucher if present
                 if (orderRequestDTO.getVoucherCode() != null && !orderRequestDTO.getVoucherCode().trim().isEmpty()) {
                     log.debug("[ORDER] Applying voucher: code={}", orderRequestDTO.getVoucherCode());
                     BigDecimal discount = voucherService.redeemVoucher(orderRequestDTO.getVoucherCode(),
@@ -123,8 +124,6 @@ public class OrderServiceImpl implements OrderService {
                     }
                     log.info("[ORDER] Voucher applied: discount={}, newTotal={}", discount, newTotal);
                     order.setTotalAmount(newTotal);
-                } else {
-                    order.setTotalAmount(orderRequestDTO.getTotalAmount());
                 }
 
                 Order savedOrder = orderRepository.save(order);
@@ -133,12 +132,9 @@ public class OrderServiceImpl implements OrderService {
                 if (orderRequestDTO.getOrderItems() != null) {
                     List<OrderItem> items = new ArrayList<>();
                     for (OrderItemRequestDTO itemDto : orderRequestDTO.getOrderItems()) {
-                        OrderItem item = new OrderItem();
+                        // Use MapStruct to map DTO to Entity
+                        OrderItem item = orderItemMapper.toEntity(itemDto);
                         item.setOrder(savedOrder);
-                        item.setQuantity(itemDto.getQuantity());
-                        item.setUnitPrice(itemDto.getUnitPrice());
-                        item.setSubtotal(itemDto.getSubtotal());
-                        item.setCustomText(itemDto.getCustomText());
 
                         if (itemDto.getPackId() != null) {
                             Pack pack = packRepository.findById(itemDto.getPackId())
@@ -148,7 +144,8 @@ public class OrderServiceImpl implements OrderService {
                                     });
                             log.debug("[ORDER] Pack {} status = {}", pack.getPackId(), pack.getStatus());
                             if (!PackStatus.STOCKED.equals(pack.getStatus())) {
-                                log.warn("[ORDER] Pack {} is not STOCKED, current status={}", pack.getPackId(), pack.getStatus());
+                                log.warn("[ORDER] Pack {} is not STOCKED, current status={}", pack.getPackId(),
+                                        pack.getStatus());
                                 throw new RuntimeException("Pack " + itemDto.getPackId() + " is not STOCKED anymore");
                             }
                             pack.setStatus(PackStatus.RESERVED);
@@ -162,7 +159,8 @@ public class OrderServiceImpl implements OrderService {
                     savedOrder.setOrderItems(items);
                 }
 
-                log.info("[ORDER] createOrder complete: orderId={}, totalAmount={}", savedOrder.getOrderId(), savedOrder.getTotalAmount());
+                log.info("[ORDER] createOrder complete: orderId={}, totalAmount={}", savedOrder.getOrderId(),
+                        savedOrder.getTotalAmount());
                 return orderMapper.toOrderResponse(savedOrder);
             });
 
