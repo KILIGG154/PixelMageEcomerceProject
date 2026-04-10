@@ -28,6 +28,7 @@ import com.example.PixelMageEcomerceProject.repository.SpreadRepository;
 import com.example.PixelMageEcomerceProject.dto.response.AnalyticsResponse;
 import com.example.PixelMageEcomerceProject.entity.ReadingSession;
 import com.example.PixelMageEcomerceProject.enums.ReadingSessionStatus;
+import com.example.PixelMageEcomerceProject.mapper.OrderMapper;
 import com.example.PixelMageEcomerceProject.entity.Account;
 import com.example.PixelMageEcomerceProject.entity.CardTemplate;
 import com.example.PixelMageEcomerceProject.entity.Spread;
@@ -44,7 +45,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final ReadingSessionRepository readingSessionRepository;
     private final SpreadRepository spreadRepository;
     // Assume OrderMapper is available, if not we will just map manually or inject it.
-    private final com.example.PixelMageEcomerceProject.mapper.OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -67,7 +68,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         Map<String, BigDecimal> dailyMap = new HashMap<>();
-        
+
         for (Order order : recentSucceededOrders) {
             String dayStr = order.getOrderDate().format(formatter);
             dailyMap.put(dayStr, dailyMap.getOrDefault(dayStr, BigDecimal.ZERO).add(order.getTotalAmount()));
