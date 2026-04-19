@@ -62,6 +62,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
         @CacheEvict(value = "products",     allEntries = true),
+        @CacheEvict(value = "products-public", allEntries = true),
         @CacheEvict(value = "product-by-id", allEntries = true)
     })
     public ProductResponse createProduct(ProductRequestDTO productRequestDTO) {
@@ -133,6 +134,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
         @CacheEvict(value = "products",      allEntries = true),
+        @CacheEvict(value = "products-public", allEntries = true),
         @CacheEvict(value = "product-by-id", key = "#id")
     })
     public ProductResponse updateProduct(Integer id, ProductRequestDTO productRequestDTO) {
@@ -195,6 +197,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Caching(evict = {
         @CacheEvict(value = "products",      allEntries = true),
+        @CacheEvict(value = "products-public", allEntries = true),
         @CacheEvict(value = "product-by-id", key = "#id")
     })
     public void deleteProduct(Integer id) {
